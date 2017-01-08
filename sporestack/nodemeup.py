@@ -34,6 +34,7 @@ parser.add_argument('--dcid', help='Datacenter ID '
 
 args = parser.parse_args()
 
+
 while True:
     node = sporestack.node(days=1,
                            sshkey=sshkey,
@@ -46,6 +47,7 @@ while True:
         uri = 'bitcoin:{}?amount={}'.format(node.address, amount)
         qr = pyqrcode.create(uri)
         print(qr.terminal())
+        print(node_uuid)
         print(uri)
         print('Pay with Bitcoin. Resize your terminal if QR code is unclear.')
     else:

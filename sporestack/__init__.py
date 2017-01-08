@@ -17,7 +17,7 @@ ENDPOINT = 'http://sporestack.com/node'
 
 # ENDPOINT = 'http://localhost:8082/node'
 
-TIMEOUT = 30
+TIMEOUT = 60
 
 
 def node(days,
