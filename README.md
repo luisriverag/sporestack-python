@@ -4,9 +4,19 @@ Python library for http://sporestack.com/
 
 * `pip install sporestack`
 
+# In action
+
+[![asciicast](https://asciinema.org/a/98672.png)](https://asciinema.org/a/98672)
+
 # Usage
 
-Spawn one from your terminal.
+Spawn one and SSH into it.
+
+```
+nodemeup
+```
+
+Spawn one from your terminal, full Python example.
 
 ```
 import sporestack
@@ -55,11 +65,6 @@ print(banner)
 
 ```
 
-Spawn one and SSH into it.
-
-```
-nodemeup
-```
 
 # Examples
 
