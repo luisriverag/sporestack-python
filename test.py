@@ -20,7 +20,6 @@ with open(ssh_key_path) as ssh_key_file:
     sshkey = ssh_key_file.read()
 
 for unique in ['3b69d7c9-ad4d-4d31-b04e-b224f02de4d4',
-               '4a79a54b-b763-4a52-9d1e-d0d72ec7f67d',
                new_uuid]:
     node = sporestack.node(days=1,
                            sshkey=sshkey,

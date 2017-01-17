@@ -18,6 +18,18 @@ ENDPOINT = 'http://sporestack.com/node'
 # ENDPOINT = 'http://localhost:8082/node'
 
 TIMEOUT = 60
+OPTIONS_TIMEOUT = 10
+
+
+def node_options():
+    """
+    Returns a dict of options for osid, dcid, and flavor.
+    """
+    http_return = urllib2.urlopen(ENDPOINT + '/options',
+                                  timeout=OPTIONS_TIMEOUT)
+    if http_return.getcode() != 200:
+        raise Exception('SporeStack /node/options did not return HTTP 200.')
+    return yaml.safe_load(http_return.read())
 
 
 def node(days,
@@ -56,6 +68,8 @@ def node(days,
         pre_data['dcid'] = dcid
     if flavor is not None:
         pre_data['flavor'] = flavor
+    if endpoint is None:
+        endpoint = ENDPOINT
 
     post_data = json.dumps(pre_data)
     try:
@@ -63,7 +77,7 @@ def node(days,
                                       data=post_data,
                                       timeout=TIMEOUT)
     except urllib2.HTTPError as http_error:
-        if http_error.code == 400:
+        if http_error.code != 200:
             # Throw exception with output from endpoint..
             raise Exception(http_error.read())
         else:

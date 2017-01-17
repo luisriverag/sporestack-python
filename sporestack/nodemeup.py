@@ -11,43 +11,59 @@ from socket import create_connection
 import pyqrcode
 import sporestack
 
-node_uuid = str(random_uuid())
+options = sporestack.node_options()
+
+parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
+
+osid_help = 'Default: 230 (FreeBSD 11)\n'
+for osid in options['osid']:
+    name = options['osid'][osid]['name']
+    osid_help += '{}: {}\n'.format(osid, name)
+
+dcid_help = 'Default: (probably) 3 (Dallas)\n'
+for dcid in options['dcid']:
+    name = options['dcid'][dcid]['name']
+    dcid_help += '{}: {}\n'.format(dcid, name)
+
+flavor_help = 'Default: 9 (768MiB)\n'
+for flavor in options['flavor']:
+    help_line = '{}: RAM: {}, VCPUs: {}, DISK: {}\n'
+    ram = options['flavor'][flavor]['ram']
+    disk = options['flavor'][flavor]['disk']
+    vcpus = options['flavor'][flavor]['vcpu_count']
+    flavor_help += help_line.format(flavor, ram, vcpus, disk)
+
+parser.add_argument('--osid', help=osid_help, type=int)
+parser.add_argument('--dcid', help=dcid_help, type=int)
+parser.add_argument('--flavor', help=flavor_help, type=int)
+parser.add_argument('--days', help='Days to live: 1-28. Defaults to 1.',
+                    type=int, default=1)
+parser.add_argument('--uuid', help='Force a specific UUID.',
+                    default=str(random_uuid()))
+parser.add_argument('--endpoint', help=argparse.SUPPRESS)
+
+args = parser.parse_args()
 
 ssh_key_path = '{}/.ssh/id_rsa.pub'.format(os.getenv('HOME'))
 
 with open(ssh_key_path) as ssh_key_file:
     sshkey = ssh_key_file.read()
 
-parser = argparse.ArgumentParser()
-
-parser.add_argument('--osid', help='Operating System ID '
-                                   '230: FreeBSD 11, 215: Ubuntu 16.04, '
-                                   '179: CoreOS Stable, 193: Debian 8, '
-                                   '167: CentOS 7',
-                                   type=int)
-parser.add_argument('--dcid', help='Datacenter ID '
-                                   '3: Dallas, 2: Chicago, '
-                                   '12: San Jose, 5: Los Angeles, '
-                                   '6: Atlanta, 1: New Jersey, '
-                                   '39: Miami, 4: Seattle',
-                                   type=int)
-
-args = parser.parse_args()
-
-
 while True:
-    node = sporestack.node(days=1,
+    node = sporestack.node(days=args.days,
                            sshkey=sshkey,
-                           unique=node_uuid,
+                           unique=args.uuid,
                            osid=args.osid,
-                           dcid=args.dcid)
+                           dcid=args.dcid,
+                           flavor=args.flavor,
+                           endpoint=args.endpoint)
     if node.payment_status is False:
         amount = "{0:.8f}".format(node.satoshis *
                                   0.00000001)
         uri = 'bitcoin:{}?amount={}'.format(node.address, amount)
         qr = pyqrcode.create(uri)
         print(qr.terminal())
-        print(node_uuid)
+        print('UUID: {}'.format(args.uuid))
         print(uri)
         print('Pay with Bitcoin. Resize your terminal if QR code is unclear.')
     else:
@@ -78,7 +94,7 @@ IPv6: {}
 IPv4: {}
 End of Life: {}
 
-'''.format(node_uuid,
+'''.format(args.uuid,
            node.ip6,
            node.ip4,
            node.end_of_life)
@@ -91,9 +107,10 @@ os.system(command)
 
 print(banner)
 
+
 def fakemain():
     '''
     NOOP
     I need to fix this.
     '''
-    a = 0
+    return True
