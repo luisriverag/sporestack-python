@@ -25,7 +25,7 @@ for dcid in options['dcid']:
     name = options['dcid'][dcid]['name']
     dcid_help += '{}: {}\n'.format(dcid, name)
 
-flavor_help = 'Default: 9 (768MiB)\n'
+flavor_help = 'Default: 29 (768MiB)\n'
 for flavor in options['flavor']:
     help_line = '{}: RAM: {}, VCPUs: {}, DISK: {}\n'
     ram = options['flavor'][flavor]['ram']

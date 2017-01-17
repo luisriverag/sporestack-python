@@ -10,10 +10,42 @@ Python library for http://sporestack.com/
 
 # Usage
 
-Spawn one and SSH into it.
+View available options (osid, dcid, flavor) as a dict.
 
 ```
-nodemeup
+def node_options():
+    """
+    Returns a dict of options for osid, dcid, and flavor.
+    """
+```
+
+
+Spawn a node.
+
+```
+def node(days,
+         unique,
+         sshkey=None,
+         cloudinit=None,
+         startupscript=None,
+         osid=None,
+         dcid=None,
+         flavor=None):
+    """
+    Returns a node
+
+    Returns:
+    node.payment_status
+    node.end_of_life
+    node.ip6
+    node.ip4
+    """
+```
+
+Or use the helper application:
+
+```
+$ nodemeup
 ```
 
 Spawn one from your terminal, full Python example.
