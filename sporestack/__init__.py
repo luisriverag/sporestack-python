@@ -40,6 +40,7 @@ def node(days,
          osid=None,
          dcid=None,
          flavor=None,
+         paycode=None,
          endpoint=ENDPOINT):
     """
     Returns a node
@@ -68,6 +69,8 @@ def node(days,
         pre_data['dcid'] = dcid
     if flavor is not None:
         pre_data['flavor'] = flavor
+    if paycode is not None:
+        pre_data['paycode'] = paycode
     if endpoint is None:
         endpoint = ENDPOINT
 

@@ -40,14 +40,19 @@ parser.add_argument('--days', help='Days to live: 1-28. Defaults to 1.',
                     type=int, default=1)
 parser.add_argument('--uuid', help='Force a specific UUID.',
                     default=str(random_uuid()))
-parser.add_argument('--endpoint', help=argparse.SUPPRESS)
+parser.add_argument('--endpoint', help=argparse.SUPPRESS, default=None)
+parser.add_argument('--paycode', help=argparse.SUPPRESS, default=None)
 
 args = parser.parse_args()
 
 ssh_key_path = '{}/.ssh/id_rsa.pub'.format(os.getenv('HOME'))
 
-with open(ssh_key_path) as ssh_key_file:
-    sshkey = ssh_key_file.read()
+try:
+    with open(ssh_key_path) as ssh_key_file:
+        sshkey = ssh_key_file.read()
+except:
+    print('You need to have an SSH key file. Run ssh-keygen.')
+    exit(1)
 
 while True:
     node = sporestack.node(days=args.days,
@@ -56,21 +61,31 @@ while True:
                            osid=args.osid,
                            dcid=args.dcid,
                            flavor=args.flavor,
+                           paycode=args.paycode,
                            endpoint=args.endpoint)
     if node.payment_status is False:
         amount = "{0:.8f}".format(node.satoshis *
                                   0.00000001)
         uri = 'bitcoin:{}?amount={}'.format(node.address, amount)
+        premessage = '''UUID: {}
+{}
+Pay with Bitcoin. Resize your terminal if QR code is not visible.'''
+        message = premessage.format(args.uuid,
+                                    uri)
         qr = pyqrcode.create(uri)
-        print(qr.terminal())
-        print('UUID: {}'.format(args.uuid))
-        print(uri)
-        print('Pay with Bitcoin. Resize your terminal if QR code is unclear.')
+        # Show in reverse and normal modes so that it works on any terminal.
+        print(qr.terminal(module_color='black',
+                          background='white'))
+        print(message)
+        sleep(2)
+        print(qr.terminal(module_color='white',
+                          background='black'))
+        print(message)
     else:
         print('Node being built...')
     if node.creation_status is True:
         break
-    sleep(5)
+    sleep(2)
 
 print('Waiting for node to come online.')
 ipaddress = None
