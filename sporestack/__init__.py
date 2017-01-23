@@ -13,9 +13,7 @@ import urllib2
 import yaml
 
 
-ENDPOINT = 'http://sporestack.com/node'
-
-# ENDPOINT = 'http://localhost:8082/node'
+ENDPOINT = 'https://sporestack.com/node'
 
 TIMEOUT = 60
 OPTIONS_TIMEOUT = 10
