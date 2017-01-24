@@ -58,6 +58,12 @@ def node(days,
         b64_cloudinit = b64encode(cloudinit)
         pre_data['cloudinit'] = b64_cloudinit
     if sshkey is not None:
+        # Strip comment field off of SSH key before we send it to SporeStack,
+        # in case it has any.
+        sshkey_prefix = sshkey.split(' ')[0]
+        sshkey_key = sshkey.split(' ')[1]
+        commentless_key = sshkey_prefix + ' ' + sshkey_key
+        sshkey = commentless_key
         pre_data['sshkey'] = sshkey
     if startupscript is not None:
         pre_data['startupscript'] = startupscript

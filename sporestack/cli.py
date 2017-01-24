@@ -2,12 +2,15 @@
 sporestack CLI client
 """
 
+from __future__ import print_function
 import argparse
 from uuid import uuid4 as random_uuid
 from time import sleep, time
 import os
 from socket import create_connection
 import json
+import sys
+from subprocess import Popen, PIPE
 
 import pyqrcode
 import sporestack
@@ -23,6 +26,13 @@ IPv6: {}
 IPv4: {}
 End of Life: {} ({})
 '''
+
+
+def stderr(*args, **kwargs):
+    """
+    http://stackoverflow.com/a/14981125
+    """
+    print(*args, file=sys.stderr, **kwargs)
 
 
 def ttl(end_of_life):
@@ -48,14 +58,56 @@ def list(_):
     if not os.path.isdir(DOT_FILE_PATH):
         print('Run spawn, first.')
         exit(1)
+    current_time = int(time())
+    we_said_something = False
     for node_file in os.listdir(DOT_FILE_PATH):
         node = node_info(node_file.split('.')[0])
-        banner = BANNER.format(node['uuid'],
-                               node['ip6'],
-                               node['ip4'],
-                               node['end_of_life'],
-                               ttl(node['end_of_life']))
-        print(banner)
+        if current_time < node['end_of_life']:
+            we_said_something = True
+            banner = BANNER.format(node['uuid'],
+                                   node['ip6'],
+                                   node['ip4'],
+                                   node['end_of_life'],
+                                   ttl(node['end_of_life']))
+            print(banner)
+            if node['group'] is not None:
+                print('Group: {}'.format(node['group']))
+    if we_said_something is False:
+        print('No active nodes, but you have expired nodes.')
+
+
+def sporestackfile_helper_wrapper(args):
+    """
+    argparse wrapper for sporestack_helper
+    """
+    print(sporestackfile_helper(days=args.days,
+                                startupscript=args.startupscript,
+                                osid=args.osid,
+                                postlaunch=args.postlaunch,
+                                dcid=args.dcid,
+                                flavor=args.flavor))
+
+
+def sporestackfile_helper(days,
+                          startupscript,
+                          osid,
+                          postlaunch=None,
+                          dcid=None,
+                          flavor=29):
+    """
+    Helps you write sporestack.json files.
+    """
+    if postlaunch is not None:
+        with open(postlaunch) as postlaunch_script:
+            postlaunch = postlaunch_script.read()
+    with open(startupscript) as script:
+            data = {'days': days,
+                    'osid': osid,
+                    'startupscript': script.read(),
+                    'dcid': dcid,
+                    'flavor': flavor,
+                    'postlaunch': postlaunch}
+    return (json.dumps(data, sort_keys=True, indent=True))
 
 
 def node_info(uuid):
@@ -66,7 +118,17 @@ def node_info(uuid):
         return node
 
 
-def ssh(uuid):
+def ssh_wrapper(args):
+    """
+    argparse wrapper for ssh()
+    """
+    possible_output = ssh(uuid=args.uuid,
+                          stdin=args.stdin)
+    if possible_output is not None:
+        print(possible_output, end='')
+
+
+def ssh(uuid, stdin=None):
     """
     Connects to node via SSH. Meant for terminals.
     Probably want to split this into connectable and ssh?
@@ -89,39 +151,88 @@ def ssh(uuid):
                 ipaddress = ip
                 break
             except:
-                print('Waiting for node to come online.')
+                stderr('Waiting for node to come online.')
             sleep(2)
         if ipaddress is not None:
             break
     command = ('ssh root@{} -p 22 -oStrictHostKeyChecking=no'
                ' -oUserKnownHostsFile=/dev/null'.format(ipaddress))
-    os.system(command)
+    if stdin is None:
+        os.system(command)
+    else:
+        command = ['ssh', '-l', 'root', ipaddress,
+                   '-oStrictHostKeyChecking=no',
+                   '-oUserKnownHostsFile=/dev/null']
+        process = Popen(command, stdin=PIPE, stderr=PIPE, stdout=PIPE)
+        _stdout, _stderr = process.communicate(stdin)
+        return_code = process.wait()
+        if return_code != 0:
+            stderr(_stderr)
+            raise
+        return _stdout
 
 
-def spawn(args):
-    try:
-        with open(args.ssh_key) as ssh_key_file:
-            # Try to strip off any SSH key comments.
-            # Maybe this should be in __init__.py?
-            unclean_ssh_key = ssh_key_file.read()
-            sshkey_prefix = unclean_ssh_key.split(' ')[0]
-            sshkey_key = unclean_ssh_key.split(' ')[1]
-            commentless_key = sshkey_prefix + ' ' + sshkey_key
-            sshkey = commentless_key
-    except:
-        pre_message = 'Unable to open {}. Did you run ssh-keygen?'
-        message = pre_message.format(args.ssh_key)
-        print(message)
-        exit(1)
+def spawn_wrapper(args):
+    """
+    Wraps spawn(), invoked by argparse.
+    Needs to be cleaned up.
+    """
+    spawn(days=args.days,
+          uuid=args.uuid,
+          sshkey=args.ssh_key,
+          sporestackfile=args.sporestackfile,
+          group=args.group,
+          osid=args.osid,
+          dcid=args.dcid,
+          flavor=args.flavor,
+          paycode=args.paycode,
+          endpoint=args.endpoint)
+
+
+def spawn(days,
+          uuid,
+          sshkey=None,
+          sporestackfile=None,
+          group=None,
+          osid=None,
+          dcid=None,
+          flavor=None,
+          startupscript=None,
+          postlaunch=None,
+          connectafter=True,
+          paycode=None,
+          endpoint=None):
+    if sshkey is not None:
+        try:
+            with open(sshkey) as ssh_key_file:
+                sshkey = ssh_key_file.read()
+        except:
+            pre_message = 'Unable to open {}. Did you run ssh-keygen?'
+            message = pre_message.format(sshkey)
+            stderr(message)
+            exit(1)
+    if sporestackfile is not None:
+        connectafter = False
+        with open(sporestackfile) as sporestack_json:
+            settings = yaml.safe_load(sporestack_json)
+            osid = settings['osid']
+            startupscript = settings['startupscript']
+            postlaunch = settings['postlaunch']
+            for setting in ['dcid',
+                            'flavor']:
+                if eval(setting) is None:
+                    if setting in settings:
+                        exec(setting + ' = ' + str(settings[setting]))
     while True:
-        node = sporestack.node(days=args.days,
+        node = sporestack.node(days=days,
                                sshkey=sshkey,
-                               unique=args.uuid,
-                               osid=args.osid,
-                               dcid=args.dcid,
-                               flavor=args.flavor,
-                               paycode=args.paycode,
-                               endpoint=args.endpoint)
+                               unique=uuid,
+                               osid=osid,
+                               dcid=dcid,
+                               flavor=flavor,
+                               startupscript=startupscript,
+                               paycode=paycode,
+                               endpoint=endpoint)
         if node.payment_status is False:
             amount = "{0:.8f}".format(node.satoshis *
                                       0.00000001)
@@ -129,48 +240,52 @@ def spawn(args):
             premessage = '''UUID: {}
 {}
 Pay with Bitcoin. Resize your terminal if QR code is not visible.'''
-            message = premessage.format(args.uuid,
+            message = premessage.format(uuid,
                                         uri)
             qr = pyqrcode.create(uri)
             # Show in reverse and normal modes so that it works on any
             # terminal.
-            print(qr.terminal(module_color='black',
-                              background='white'))
-            print(message)
+            stderr(qr.terminal(module_color='black',
+                               background='white'))
+            stderr(message)
             sleep(2)
-            print(qr.terminal(module_color='white',
-                              background='black'))
-            print(message)
+            stderr(qr.terminal(module_color='white',
+                               background='black'))
+            stderr(message)
         else:
-            print('Node being built...')
+            stderr('Node being built...')
         if node.creation_status is True:
             break
         sleep(2)
 
-    banner = BANNER.format(args.uuid,
+    banner = BANNER.format(uuid,
                            node.ip6,
                            node.ip4,
                            node.end_of_life,
                            ttl(node.end_of_life))
     if not os.path.isdir(DOT_FILE_PATH):
         os.mkdir(DOT_FILE_PATH, 0700)
-    node_file_path = '{}/{}.json'.format(DOT_FILE_PATH, args.uuid)
+    node_file_path = '{}/{}.json'.format(DOT_FILE_PATH, uuid)
     node_dump = {'ip4': node.ip4,
                  'ip6': node.ip6,
                  'end_of_life': node.end_of_life,
-                 'uuid': args.uuid}
+                 'uuid': uuid,
+                 'group': group}
     with open(node_file_path, 'w') as node_file:
         json.dump(node_dump, node_file)
-    print(banner)
-    ssh(args.uuid)
-    print(banner)
+    if postlaunch is not None:
+        print(ssh(uuid, stdin=postlaunch), end='')
+    if connectafter is True:
+        stderr(banner)
+        ssh(uuid)
+        stderr(banner)
 
 
 def nodemeup():
     """
     Ugly deprecation notice.
     """
-    print('nodemeup is deprecated. Please use "sporestack", instead.')
+    print('nodemeup is deprecated. Please use "sporestack spawn", instead.')
     exit(1)
 
 
@@ -205,13 +320,44 @@ def main():
     spawn_subparser = subparser.add_parser('spawn',
                                            help='Spawns a node.',
                                            formatter_class=CustomFormatter)
-    spawn_subparser.set_defaults(func=spawn)
+    spawn_subparser.set_defaults(func=spawn_wrapper)
     list_subparser = subparser.add_parser('list', help='Lists nodes.')
     list_subparser.set_defaults(func=list)
     ssh_subparser = subparser.add_parser('ssh',
                                          help='Connect to node.')
-    ssh_subparser.set_defaults(func=ssh)
+    ssh_subparser.set_defaults(func=ssh_wrapper)
     ssh_subparser.add_argument('uuid', help='UUID of node to connect to.')
+    ssh_subparser.add_argument('--stdin',
+                               help='Send to stdin and return stdout',
+                               default=None)
+
+    ssfh_help = 'Helps you write sporestack.json files.'
+    ssfh_subparser = subparser.add_parser('sporestackfile_helper',
+                                          help=ssfh_help)
+    ssfh_subparser.set_defaults(func=sporestackfile_helper_wrapper)
+    ssfh_subparser.add_argument('startupscript',
+                                help='startup script file.')
+    ssfh_subparser.add_argument('--postlaunch',
+                                help='postlaunch script file.',
+                                default=None)
+    ssfh_subparser.add_argument('--days',
+                                help='Days',
+                                required=True,
+                                type=int)
+    ssfh_subparser.add_argument('--osid',
+                                help='OSID',
+                                required=True,
+                                type=int,
+                                default=None)
+    ssfh_subparser.add_argument('--dcid',
+                                help='DCID',
+                                type=int,
+                                default=None)
+    ssfh_subparser.add_argument('--flavor',
+                                help='DCID',
+                                type=int,
+                                default=29)
+
     spawn_subparser.add_argument('--osid',
                                  help=osid_help,
                                  type=int,
@@ -237,8 +383,15 @@ def main():
     spawn_subparser.add_argument('--ssh_key',
                                  help='SSH public key.',
                                  default=default_ssh_key_path)
+    spawn_subparser.add_argument('--sporestackfile',
+                                 help='SporeStack JSON file.',
+                                 default=None)
+    spawn_subparser.add_argument('--group',
+                                 help='Arbitrary group to associate node with',
+                                 default=None)
     args = parser.parse_args()
-    # This calls whatever the given command is. (spawn, list, etc)
+    # This calls the function or wrapper function, depending on what we set
+    # above.
     args.func(args)
 
 if __name__ == '__main__':
