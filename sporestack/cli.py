@@ -215,7 +215,7 @@ def main():
     spawn_subparser.add_argument('--osid',
                                  help=osid_help,
                                  type=int,
-                                 default=231)
+                                 default=230)
     spawn_subparser.add_argument('--dcid', help=dcid_help, type=int, default=3)
     spawn_subparser.add_argument('--flavor',
                                  help=flavor_help,
