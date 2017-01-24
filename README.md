@@ -45,7 +45,7 @@ def node(days,
 Or use the helper application:
 
 ```
-$ nodemeup
+$ sporestack spawn
 ```
 
 Spawn one from your terminal, full Python example.
@@ -102,9 +102,13 @@ print(banner)
 
 * [Launch a tor relay](examples/torrelay.py)
 
-# nodemeup QR behavior
+# sporestack spawn QR behavior
 
 Requires a fairly wide terminal for the QR code. Also, flashes up with alternating QR code colors to work with reversed and normal terminals.
+
+# Deprecation notice
+
+`nodemeup` has been replaced by `sporestack spawn`.
 
 # Licence
 
