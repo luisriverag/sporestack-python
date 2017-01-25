@@ -13,7 +13,7 @@ import urllib2
 import yaml
 
 
-ENDPOINT = 'https://sporestack.com/node'
+ENDPOINT = 'https://sporestack.com'
 
 TIMEOUT = 60
 OPTIONS_TIMEOUT = 10
@@ -23,10 +23,24 @@ def node_options():
     """
     Returns a dict of options for osid, dcid, and flavor.
     """
-    http_return = urllib2.urlopen(ENDPOINT + '/options',
+    http_return = urllib2.urlopen(ENDPOINT + '/node/options',
                                   timeout=OPTIONS_TIMEOUT)
     if http_return.getcode() != 200:
         raise Exception('SporeStack /node/options did not return HTTP 200.')
+    return yaml.safe_load(http_return.read())
+
+
+def node_get_launch_profile(profile):
+    """
+    Returns dict of launch instance.
+    Use 'index' if you want a list of all available.
+    https://sporestack.com/launch
+    """
+    url = '{}/launch/{}.json'.format(ENDPOINT, profile)
+    http_return = urllib2.urlopen(url,
+                                  timeout=OPTIONS_TIMEOUT)
+    if http_return.getcode() != 200:
+        raise Exception('{} did not return HTTP 200.'.format(url))
     return yaml.safe_load(http_return.read())
 
 
@@ -80,7 +94,7 @@ def node(days,
 
     post_data = json.dumps(pre_data)
     try:
-        http_return = urllib2.urlopen(endpoint,
+        http_return = urllib2.urlopen(endpoint + '/node',
                                       data=post_data,
                                       timeout=TIMEOUT)
     except urllib2.HTTPError as http_error:

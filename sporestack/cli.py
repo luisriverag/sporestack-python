@@ -76,37 +76,76 @@ def list(_):
         print('No active nodes, but you have expired nodes.')
 
 
+def json_extractor_wrapper(args):
+    """
+    argparse wrapper for json_extractor
+    """
+    print(json_extractor(args.json_file, args.json_key))
+
+
+def json_extractor(json_file, json_key):
+    """
+    Extracts a field from a json file.
+    Helps with writing SporeStack files, especially
+    extracting scripts.
+    """
+    with open(json_file) as json:
+        data = yaml.safe_load(json)
+        return data[json_key]
+
+
 def sporestackfile_helper_wrapper(args):
     """
     argparse wrapper for sporestack_helper
     """
     print(sporestackfile_helper(days=args.days,
                                 startupscript=args.startupscript,
+                                cloudinit=args.cloudinit,
                                 osid=args.osid,
+                                name=args.name,
+                                human_name=args.human_name,
+                                description=args.description,
                                 postlaunch=args.postlaunch,
                                 dcid=args.dcid,
                                 flavor=args.flavor))
 
 
 def sporestackfile_helper(days,
-                          startupscript,
                           osid,
+                          startupscript=None,
+                          cloudinit=None,
+                          name=None,
+                          human_name=None,
+                          description=None,
                           postlaunch=None,
                           dcid=None,
                           flavor=29):
     """
     Helps you write sporestack.json files.
     """
+    if ' ' in name:
+        stderr('Name cannot contain spaces.')
+        raise
+    # So much duplicity :-/.
     if postlaunch is not None:
         with open(postlaunch) as postlaunch_script:
             postlaunch = postlaunch_script.read()
-    with open(startupscript) as script:
-            data = {'days': days,
-                    'osid': osid,
-                    'startupscript': script.read(),
-                    'dcid': dcid,
-                    'flavor': flavor,
-                    'postlaunch': postlaunch}
+    if cloudinit is not None:
+        with open(cloudinit) as cloudinit_script:
+            cloudinit = cloudinit_script.read()
+    if startupscript is not None:
+        with open(startupscript) as startupscript_script:
+            startupscript = startupscript_script.read()
+    data = {'days': days,
+            'osid': osid,
+            'name': name,
+            'human_name': human_name,
+            'description': description,
+            'startupscript': startupscript,
+            'cloudinit': cloudinit,
+            'dcid': dcid,
+            'flavor': flavor,
+            'postlaunch': postlaunch}
     return (json.dumps(data, sort_keys=True, indent=True))
 
 
@@ -180,7 +219,9 @@ def spawn_wrapper(args):
     spawn(days=args.days,
           uuid=args.uuid,
           sshkey=args.ssh_key,
+          launch=args.launch,
           sporestackfile=args.sporestackfile,
+          cloudinit=args.cloudinit,
           group=args.group,
           osid=args.osid,
           dcid=args.dcid,
@@ -192,6 +233,7 @@ def spawn_wrapper(args):
 def spawn(days,
           uuid,
           sshkey=None,
+          launch=None,
           sporestackfile=None,
           group=None,
           osid=None,
@@ -200,6 +242,8 @@ def spawn(days,
           startupscript=None,
           postlaunch=None,
           connectafter=True,
+          launch_profile=None,
+          cloudinit=None,
           paycode=None,
           endpoint=None):
     if sshkey is not None:
@@ -211,18 +255,22 @@ def spawn(days,
             message = pre_message.format(sshkey)
             stderr(message)
             exit(1)
-    if sporestackfile is not None:
+    # Yuck.
+    if sporestackfile is not None or launch is not None:
         connectafter = False
-        with open(sporestackfile) as sporestack_json:
-            settings = yaml.safe_load(sporestack_json)
-            osid = settings['osid']
-            startupscript = settings['startupscript']
-            postlaunch = settings['postlaunch']
-            for setting in ['dcid',
-                            'flavor']:
-                if eval(setting) is None:
-                    if setting in settings:
-                        exec(setting + ' = ' + str(settings[setting]))
+        if sporestackfile is not None:
+            with open(sporestackfile) as sporestack_json:
+                settings = yaml.safe_load(sporestack_json)
+                launch_profile = sporestackfile
+        else:
+            settings = sporestack.node_get_launch_profile(launch)
+            launch_profile = settings['name']
+        days = settings['days']
+        osid = settings['osid']
+        flavor = settings['flavor']
+        startupscript = settings['startupscript']
+        postlaunch = settings['postlaunch']
+        cloudinit = settings['cloudinit']
     while True:
         node = sporestack.node(days=days,
                                sshkey=sshkey,
@@ -231,6 +279,7 @@ def spawn(days,
                                dcid=dcid,
                                flavor=flavor,
                                startupscript=startupscript,
+                               cloudinit=cloudinit,
                                paycode=paycode,
                                endpoint=endpoint)
         if node.payment_status is False:
@@ -270,6 +319,7 @@ Pay with Bitcoin. Resize your terminal if QR code is not visible.'''
                  'ip6': node.ip6,
                  'end_of_life': node.end_of_life,
                  'uuid': uuid,
+                 'launch_profile': launch_profile,
                  'group': group}
     with open(node_file_path, 'w') as node_file:
         json.dump(node_dump, node_file)
@@ -291,6 +341,7 @@ def nodemeup():
 
 def main():
     options = sporestack.node_options()
+    launch_profiles = sporestack.node_get_launch_profile('index')
 
     class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter,
                           argparse.RawTextHelpFormatter):
@@ -301,6 +352,11 @@ def main():
         """
         pass
     parser = argparse.ArgumentParser(description='SporeStack.com CLI.')
+    launch_help = ''
+    for profile in launch_profiles:
+        launch_help += '{}: {}: {}\n'.format(profile['name'],
+                                             profile['human_name'],
+                                             profile['description'])
     osid_help = ''
     for osid in sorted(options['osid'], key=int):
         name = options['osid'][osid]['name']
@@ -331,11 +387,22 @@ def main():
                                help='Send to stdin and return stdout',
                                default=None)
 
+    json_extractor_help = 'Helps you extract fields from json files.'
+    json_extractor_subparser = subparser.add_parser('json_extractor',
+                                                    help=json_extractor_help)
+    json_extractor_subparser.set_defaults(func=json_extractor_wrapper)
+    json_extractor_subparser.add_argument('json_file',
+                                          help='json file.')
+    json_extractor_subparser.add_argument('json_key',
+                                          help='json key.')
+
     ssfh_help = 'Helps you write sporestack.json files.'
     ssfh_subparser = subparser.add_parser('sporestackfile_helper',
                                           help=ssfh_help)
     ssfh_subparser.set_defaults(func=sporestackfile_helper_wrapper)
-    ssfh_subparser.add_argument('startupscript',
+    ssfh_subparser.add_argument('--cloudinit',
+                                help='cloudinit data.')
+    ssfh_subparser.add_argument('--startupscript',
                                 help='startup script file.')
     ssfh_subparser.add_argument('--postlaunch',
                                 help='postlaunch script file.',
@@ -344,6 +411,12 @@ def main():
                                 help='Days',
                                 required=True,
                                 type=int)
+    ssfh_subparser.add_argument('--name',
+                                help='Name')
+    ssfh_subparser.add_argument('--human_name',
+                                help='Human readable name')
+    ssfh_subparser.add_argument('--description',
+                                help='Description')
     ssfh_subparser.add_argument('--osid',
                                 help='OSID',
                                 required=True,
@@ -383,8 +456,14 @@ def main():
     spawn_subparser.add_argument('--ssh_key',
                                  help='SSH public key.',
                                  default=default_ssh_key_path)
+    spawn_subparser.add_argument('--launch',
+                                 help=launch_help,
+                                 default=None)
     spawn_subparser.add_argument('--sporestackfile',
                                  help='SporeStack JSON file.',
+                                 default=None)
+    spawn_subparser.add_argument('--cloudinit',
+                                 help='cloudinit file.',
                                  default=None)
     spawn_subparser.add_argument('--group',
                                  help='Arbitrary group to associate node with',

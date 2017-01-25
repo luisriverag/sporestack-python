@@ -16,6 +16,12 @@ Use the helper application:
 $ sporestack spawn
 ```
 
+Spawn a tor relay for 28 days:
+
+```
+$ sporestack spawn --launch tor_relay
+```
+
 View available options (osid, dcid, flavor) as a dict.
 
 ```
@@ -48,9 +54,9 @@ def node(days,
     """
 ```
 
-# Examples
+# Example SporeStack files
 
-* `sporestack spawn --sporestackfile examples/torrelay.json`
+https://github.com/sporestack/node-profiles
 
 # sporestack spawn QR behavior
 
