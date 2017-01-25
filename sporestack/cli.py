@@ -69,9 +69,12 @@ def list(_):
                                    node['ip4'],
                                    node['end_of_life'],
                                    ttl(node['end_of_life']))
-            print(banner)
+            print(banner, end='')
             if node['group'] is not None:
                 print('Group: {}'.format(node['group']))
+            if 'launch_profile' in node:
+                if node['launch_profile'] is not None:
+                    print('Launch profile: {}'.format(node['launch_profile']))
     if we_said_something is False:
         print('No active nodes, but you have expired nodes.')
 
@@ -216,8 +219,8 @@ def spawn_wrapper(args):
     Wraps spawn(), invoked by argparse.
     Needs to be cleaned up.
     """
-    spawn(days=args.days,
-          uuid=args.uuid,
+    spawn(uuid=args.uuid,
+          days=args.days,
           sshkey=args.ssh_key,
           launch=args.launch,
           sporestackfile=args.sporestackfile,
@@ -230,8 +233,8 @@ def spawn_wrapper(args):
           endpoint=args.endpoint)
 
 
-def spawn(days,
-          uuid,
+def spawn(uuid,
+          days=None,
           sshkey=None,
           launch=None,
           sporestackfile=None,
@@ -265,7 +268,8 @@ def spawn(days,
         else:
             settings = sporestack.node_get_launch_profile(launch)
             launch_profile = settings['name']
-        days = settings['days']
+        # Iffy on this. Let's let the user pick the days.
+        # days = settings['days']
         osid = settings['osid']
         flavor = settings['flavor']
         startupscript = settings['startupscript']
@@ -409,7 +413,7 @@ def main():
                                 default=None)
     ssfh_subparser.add_argument('--days',
                                 help='Days',
-                                required=True,
+                                default=1,
                                 type=int)
     ssfh_subparser.add_argument('--name',
                                 help='Name')
