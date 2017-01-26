@@ -58,10 +58,6 @@ def node(days,
 
 https://github.com/sporestack/node-profiles
 
-# sporestack spawn QR behavior
-
-Requires a fairly wide terminal for the QR code. Also, flashes up with alternating QR code colors to work with reversed and normal terminals.
-
 # Deprecation notice
 
 `nodemeup` has been replaced by `sporestack spawn`.

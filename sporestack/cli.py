@@ -275,6 +275,7 @@ def spawn(uuid,
         startupscript = settings['startupscript']
         postlaunch = settings['postlaunch']
         cloudinit = settings['cloudinit']
+    already_showed_qr = False
     while True:
         node = sporestack.node(days=days,
                                sshkey=sshkey,
@@ -291,20 +292,18 @@ def spawn(uuid,
                                       0.00000001)
             uri = 'bitcoin:{}?amount={}'.format(node.address, amount)
             premessage = '''UUID: {}
-{}
-Pay with Bitcoin. Resize your terminal if QR code is not visible.'''
+Bitcoin URI: {}
+Pay with Bitcoin. Resize your terminal and try again if QR code is not visible.
+Press ctrl+c to abort.'''
             message = premessage.format(uuid,
                                         uri)
             qr = pyqrcode.create(uri)
-            # Show in reverse and normal modes so that it works on any
-            # terminal.
-            stderr(qr.terminal(module_color='black',
-                               background='white'))
-            stderr(message)
-            sleep(2)
-            stderr(qr.terminal(module_color='white',
-                               background='black'))
-            stderr(message)
+            if already_showed_qr is False:
+                stderr(qr.terminal(module_color='black',
+                                   background='white',
+                                   quiet_zone=1))
+                stderr(message)
+                already_showed_qr = True
         else:
             stderr('Node being built...')
         if node.creation_status is True:
