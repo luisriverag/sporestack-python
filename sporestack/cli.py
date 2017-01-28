@@ -21,9 +21,7 @@ DOT_FILE_PATH = '{}/.sporestack'.format(os.getenv('HOME'))
 default_ssh_key_path = '{}/.ssh/id_rsa.pub'.format(os.getenv('HOME'))
 
 BANNER = '''
-UUID: {}
-IPv6: {}
-IPv4: {}
+{}
 End of Life: {} ({})
 '''
 
@@ -43,10 +41,10 @@ def ttl(end_of_life):
     current_time = int(time())
     if current_time > end_of_life:
         dead_time = current_time - end_of_life
-        output = 'dead for {} seconds'.format(dead_time)
+        output = 'terminated for {} seconds'.format(dead_time)
     else:
         time_to_live = end_of_life - current_time
-        output = '{} seconds'.format(time_to_live)
+        output = '{} seconds till termination'.format(time_to_live)
     return output
 
 
@@ -64,17 +62,10 @@ def list(_):
         node = node_info(node_file.split('.')[0])
         if current_time < node['end_of_life']:
             we_said_something = True
-            banner = BANNER.format(node['uuid'],
-                                   node['ip6'],
-                                   node['ip4'],
-                                   node['end_of_life'],
-                                   ttl(node['end_of_life']))
-            print(banner, end='')
-            if node['group'] is not None:
-                print('Group: {}'.format(node['group']))
-            if 'launch_profile' in node:
-                if node['launch_profile'] is not None:
-                    print('Launch profile: {}'.format(node['launch_profile']))
+            for item in node:
+                if node[item] is not None:
+                    print('{}: {}'.format(item, node[item]))
+            print(ttl(node['end_of_life']))
     if we_said_something is False:
         print('No active nodes, but you have expired nodes.')
 
@@ -184,25 +175,21 @@ def ssh(uuid, stdin=None):
     else:
         node_uuid = uuid
     node = node_info(node_uuid)
-    ipaddress = None
+    hostname = node['hostname']
     while True:
-        for ip in [node['ip6'], node['ip4']]:
-            try:
-                socket = create_connection((ip, 22), timeout=2)
-                socket.close()
-                ipaddress = ip
-                break
-            except:
-                stderr('Waiting for node to come online.')
-            sleep(2)
-        if ipaddress is not None:
+        try:
+            socket = create_connection((hostname, 22), timeout=2)
+            socket.close()
             break
+        except:
+            stderr('Waiting for node to come online.')
+        sleep(2)
     command = ('ssh root@{} -p 22 -oStrictHostKeyChecking=no'
-               ' -oUserKnownHostsFile=/dev/null'.format(ipaddress))
+               ' -oUserKnownHostsFile=/dev/null'.format(hostname))
     if stdin is None:
         os.system(command)
     else:
-        command = ['ssh', '-l', 'root', ipaddress,
+        command = ['ssh', '-l', 'root', hostname,
                    '-oStrictHostKeyChecking=no',
                    '-oUserKnownHostsFile=/dev/null']
         process = Popen(command, stdin=PIPE, stderr=PIPE, stdout=PIPE)
@@ -310,9 +297,7 @@ Press ctrl+c to abort.'''
             break
         sleep(2)
 
-    banner = BANNER.format(uuid,
-                           node.ip6,
-                           node.ip4,
+    banner = BANNER.format(node.hostname,
                            node.end_of_life,
                            ttl(node.end_of_life))
     if not os.path.isdir(DOT_FILE_PATH):
@@ -320,6 +305,7 @@ Press ctrl+c to abort.'''
     node_file_path = '{}/{}.json'.format(DOT_FILE_PATH, uuid)
     node_dump = {'ip4': node.ip4,
                  'ip6': node.ip6,
+                 'hostname': node.hostname,
                  'end_of_life': node.end_of_life,
                  'uuid': uuid,
                  'launch_profile': launch_profile,

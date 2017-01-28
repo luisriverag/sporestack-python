@@ -117,6 +117,7 @@ def node(days,
         node.satoshis = data['satoshis']
         node.ip4 = data['ip4']
         node.ip6 = data['ip6']
+        node.hostname = data['hostname']
         return node
     else:
         raise Exception('Fatal issue with sporestack.')
