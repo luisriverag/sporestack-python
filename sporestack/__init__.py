@@ -8,7 +8,12 @@ from collections import namedtuple
 from warnings import warn
 from base64 import b64encode
 import json
-import urllib2
+
+# Python 2 backwards compatibility.
+try:
+    from urllib.request import urlopen, HTTPError
+except ImportError:
+    from urllib2 import urlopen, HTTPError
 
 import yaml
 
@@ -23,8 +28,8 @@ def node_options():
     """
     Returns a dict of options for osid, dcid, and flavor.
     """
-    http_return = urllib2.urlopen(ENDPOINT + '/node/options',
-                                  timeout=OPTIONS_TIMEOUT)
+    http_return = urlopen(ENDPOINT + '/node/options',
+                          timeout=OPTIONS_TIMEOUT)
     if http_return.getcode() != 200:
         raise Exception('SporeStack /node/options did not return HTTP 200.')
     return yaml.safe_load(http_return.read())
@@ -37,8 +42,8 @@ def node_get_launch_profile(profile):
     https://sporestack.com/launch
     """
     url = '{}/launch/{}.json'.format(ENDPOINT, profile)
-    http_return = urllib2.urlopen(url,
-                                  timeout=OPTIONS_TIMEOUT)
+    http_return = urlopen(url,
+                          timeout=OPTIONS_TIMEOUT)
     if http_return.getcode() != 200:
         raise Exception('{} did not return HTTP 200.'.format(url))
     return yaml.safe_load(http_return.read())
@@ -92,12 +97,16 @@ def node(days,
     if endpoint is None:
         endpoint = ENDPOINT
 
-    post_data = json.dumps(pre_data)
+    # Python 2 and 3 compatibility
     try:
-        http_return = urllib2.urlopen(endpoint + '/node',
-                                      data=post_data,
-                                      timeout=TIMEOUT)
-    except urllib2.HTTPError as http_error:
+        post_data = bytes(json.dumps(pre_data), 'utf-8')
+    except:
+        post_data = json.dumps(pre_data)
+    try:
+        http_return = urlopen(endpoint + '/node',
+                              data=post_data,
+                              timeout=TIMEOUT)
+    except HTTPError as http_error:
         if http_error.code != 200:
             # Throw exception with output from endpoint..
             raise Exception(http_error.read())

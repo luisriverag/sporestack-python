@@ -168,13 +168,7 @@ def ssh(uuid, stdin=None):
     Much to do.
     Should support specifying a keyfile, maybe?
     """
-    # There must be a better way to do this. So ugly!
-    # hug? Another argument parser? Something?
-    if not isinstance(uuid, basestring):
-        node_uuid = uuid.uuid
-    else:
-        node_uuid = uuid
-    node = node_info(node_uuid)
+    node = node_info(uuid)
     hostname = node['hostname']
     while True:
         try:
@@ -193,12 +187,20 @@ def ssh(uuid, stdin=None):
                    '-oStrictHostKeyChecking=no',
                    '-oUserKnownHostsFile=/dev/null']
         process = Popen(command, stdin=PIPE, stderr=PIPE, stdout=PIPE)
+        # Python 2 and 3 compatibility
+        try:
+            stdin = bytes(stdin, 'utf-8')
+        except:
+            stdin = stdin
         _stdout, _stderr = process.communicate(stdin)
         return_code = process.wait()
         if return_code != 0:
             stderr(_stderr)
             raise
-        return _stdout
+        try:
+            return _stdout.decode('utf-8')
+        except:
+            return _stdout
 
 
 def spawn_wrapper(args):
@@ -301,7 +303,7 @@ Press ctrl+c to abort.'''
                            node.end_of_life,
                            ttl(node.end_of_life))
     if not os.path.isdir(DOT_FILE_PATH):
-        os.mkdir(DOT_FILE_PATH, 0700)
+        os.mkdir(DOT_FILE_PATH, 0o700)
     node_file_path = '{}/{}.json'.format(DOT_FILE_PATH, uuid)
     node_dump = {'ip4': node.ip4,
                  'ip6': node.ip6,
@@ -461,6 +463,7 @@ def main():
     # This calls the function or wrapper function, depending on what we set
     # above.
     args.func(args)
+
 
 if __name__ == '__main__':
     main()
