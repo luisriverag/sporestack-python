@@ -100,6 +100,7 @@ def sporestackfile_helper_wrapper(args):
                                 human_name=args.human_name,
                                 description=args.description,
                                 postlaunch=args.postlaunch,
+                                mimetype=args.mimetype,
                                 dcid=args.dcid,
                                 flavor=args.flavor))
 
@@ -112,6 +113,7 @@ def sporestackfile_helper(days,
                           human_name=None,
                           description=None,
                           postlaunch=None,
+                          mimetype=None,
                           dcid=None,
                           flavor=29):
     """
@@ -130,6 +132,9 @@ def sporestackfile_helper(days,
     if startupscript is not None:
         with open(startupscript) as startupscript_script:
             startupscript = startupscript_script.read()
+    if description is not None:
+        with open(description) as description_file:
+            description = description_file.read()
     data = {'days': days,
             'osid': osid,
             'name': name,
@@ -139,6 +144,7 @@ def sporestackfile_helper(days,
             'cloudinit': cloudinit,
             'dcid': dcid,
             'flavor': flavor,
+            'mimetype': mimetype,
             'postlaunch': postlaunch}
     return (json.dumps(data, sort_keys=True, indent=True))
 
@@ -156,12 +162,13 @@ def ssh_wrapper(args):
     argparse wrapper for ssh()
     """
     possible_output = ssh(uuid=args.uuid,
+                          command=args.command,
                           stdin=args.stdin)
     if possible_output is not None:
         print(possible_output, end='')
 
 
-def ssh(uuid, stdin=None):
+def ssh(uuid, command=None, stdin=None):
     """
     Connects to node via SSH. Meant for terminals.
     Probably want to split this into connectable and ssh?
@@ -178,29 +185,33 @@ def ssh(uuid, stdin=None):
         except:
             stderr('Waiting for node to come online.')
         sleep(2)
-    command = ('ssh root@{} -p 22 -oStrictHostKeyChecking=no'
-               ' -oUserKnownHostsFile=/dev/null'.format(hostname))
+    if command is None:
+        command = ''
+    run_command = ('ssh root@{} -p 22 -oStrictHostKeyChecking=no'
+                   ' -oUserKnownHostsFile=/dev/null \'{}\''.format(hostname,
+                                                                   command))
     if stdin is None:
-        os.system(command)
-    else:
-        command = ['ssh', '-l', 'root', hostname,
+        os.system(run_command)
+        return
+    run_command = ['ssh', '-l', 'root', hostname,
                    '-oStrictHostKeyChecking=no',
-                   '-oUserKnownHostsFile=/dev/null']
-        process = Popen(command, stdin=PIPE, stderr=PIPE, stdout=PIPE)
-        # Python 2 and 3 compatibility
-        try:
-            stdin = bytes(stdin, 'utf-8')
-        except:
-            stdin = stdin
-        _stdout, _stderr = process.communicate(stdin)
-        return_code = process.wait()
-        if return_code != 0:
-            stderr(_stderr)
-            raise
-        try:
-            return _stdout.decode('utf-8')
-        except:
-            return _stdout
+                   '-oUserKnownHostsFile=/dev/null',
+                   command]
+    process = Popen(run_command, stdin=PIPE, stderr=PIPE, stdout=PIPE)
+    # Python 2 and 3 compatibility
+    try:
+        stdin = bytes(stdin, 'utf-8')
+    except:
+        stdin = stdin
+    _stdout, _stderr = process.communicate(stdin)
+    return_code = process.wait()
+    if return_code != 0:
+        stderr(_stderr)
+        raise
+    try:
+        return _stdout.decode('utf-8')
+    except:
+        return _stdout
 
 
 def spawn_wrapper(args):
@@ -213,6 +224,7 @@ def spawn_wrapper(args):
           sshkey=args.ssh_key,
           launch=args.launch,
           sporestackfile=args.sporestackfile,
+          startupscript=args.startupscript,
           cloudinit=args.cloudinit,
           group=args.group,
           osid=args.osid,
@@ -247,6 +259,10 @@ def spawn(uuid,
             message = pre_message.format(sshkey)
             stderr(message)
             exit(1)
+    if startupscript is not None:
+        connectafter = False
+        with open(startupscript) as startupscript_file:
+            startupscript = startupscript_file.read()
     # Yuck.
     if sporestackfile is not None or launch is not None:
         connectafter = False
@@ -320,6 +336,8 @@ Press ctrl+c to abort.'''
         stderr(banner)
         ssh(uuid)
         stderr(banner)
+    else:
+        print(uuid)
 
 
 def nodemeup():
@@ -377,6 +395,9 @@ def main():
     ssh_subparser.add_argument('--stdin',
                                help='Send to stdin and return stdout',
                                default=None)
+    ssh_subparser.add_argument('--command',
+                               help='Command to run over SSH',
+                               default=None)
 
     json_extractor_help = 'Helps you extract fields from json files.'
     json_extractor_subparser = subparser.add_parser('json_extractor',
@@ -403,11 +424,13 @@ def main():
                                 default=1,
                                 type=int)
     ssfh_subparser.add_argument('--name',
-                                help='Name')
+                                help='Name',
+                                required=True)
     ssfh_subparser.add_argument('--human_name',
-                                help='Human readable name')
+                                help='Human readable name',
+                                required=True)
     ssfh_subparser.add_argument('--description',
-                                help='Description')
+                                help='Description Markdown text file')
     ssfh_subparser.add_argument('--osid',
                                 help='OSID',
                                 required=True,
@@ -418,9 +441,12 @@ def main():
                                 type=int,
                                 default=None)
     ssfh_subparser.add_argument('--flavor',
-                                help='DCID',
+                                help='Flavor',
                                 type=int,
                                 default=29)
+    ssfh_subparser.add_argument('--mimetype',
+                                help='Suggested MIME type of stdout',
+                                default='text/plain')
 
     spawn_subparser.add_argument('--osid',
                                  help=osid_help,
@@ -452,6 +478,9 @@ def main():
                                  default=None)
     spawn_subparser.add_argument('--sporestackfile',
                                  help='SporeStack JSON file.',
+                                 default=None)
+    spawn_subparser.add_argument('--startupscript',
+                                 help='startup script file.',
                                  default=None)
     spawn_subparser.add_argument('--cloudinit',
                                  help='cloudinit file.',

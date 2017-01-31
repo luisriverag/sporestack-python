@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-VERSION = '0.3.6'
+VERSION = '0.3.7'
 
 DOWNLOAD_URL = 'https://github.com/sporestack/sporestack-python/tarball/{}'
 
@@ -17,9 +17,6 @@ setup(
     url='https://sporestack.com/',
     download_url=DOWNLOAD_URL.format(VERSION),
     packages=['sporestack'],
-    setup_requires=[
-        'flake8'
-    ],
     install_requires=[
         'pyyaml',
         'pyqrcode'
