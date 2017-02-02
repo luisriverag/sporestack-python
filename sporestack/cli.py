@@ -280,18 +280,25 @@ def spawn(uuid,
         startupscript = settings['startupscript']
         postlaunch = settings['postlaunch']
         cloudinit = settings['cloudinit']
-    already_showed_qr = False
+    earlier_satoshis = None
     while True:
-        node = sporestack.node(days=days,
-                               sshkey=sshkey,
-                               unique=uuid,
-                               osid=osid,
-                               dcid=dcid,
-                               flavor=flavor,
-                               startupscript=startupscript,
-                               cloudinit=cloudinit,
-                               paycode=paycode,
-                               endpoint=endpoint)
+        try:
+            node = sporestack.node(days=days,
+                                   sshkey=sshkey,
+                                   unique=uuid,
+                                   osid=osid,
+                                   dcid=dcid,
+                                   flavor=flavor,
+                                   startupscript=startupscript,
+                                   cloudinit=cloudinit,
+                                   paycode=paycode,
+                                   endpoint=endpoint)
+        except (sporestack.HTTPError, KeyboardInterrupt):
+            raise
+        except:
+            sleep(2)
+            stderr('Issue with SporeStack, retrying...')
+            continue
         if node.payment_status is False:
             amount = "{0:.8f}".format(node.satoshis *
                                       0.00000001)
@@ -303,12 +310,14 @@ Press ctrl+c to abort.'''
             message = premessage.format(uuid,
                                         uri)
             qr = pyqrcode.create(uri)
-            if already_showed_qr is False:
+            if earlier_satoshis != node.satoshis:
+                if earlier_satoshis is not None:
+                    stderr('Payment changed, refreshing QR.')
                 stderr(qr.terminal(module_color='black',
                                    background='white',
                                    quiet_zone=1))
                 stderr(message)
-                already_showed_qr = True
+                earlier_satoshis = node.satoshis
         else:
             stderr('Node being built...')
         if node.creation_status is True:

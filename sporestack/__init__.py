@@ -110,8 +110,14 @@ def node(days,
         if http_error.code != 200:
             # Throw exception with output from endpoint..
             raise Exception(http_error.read())
+            return False
         else:
-            raise
+            raise HTTPError
+            return False
+    except:
+        # Ugly hack.
+        raise HTTPError
+        return False
     if http_return.getcode() == 200:
         data = yaml.safe_load(http_return.read())
         if 'deprecated' in data:
