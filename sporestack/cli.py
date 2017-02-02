@@ -293,7 +293,7 @@ def spawn(uuid,
                                    cloudinit=cloudinit,
                                    paycode=paycode,
                                    endpoint=endpoint)
-        except (sporestack.HTTPError, KeyboardInterrupt):
+        except (ValueError, KeyboardInterrupt):
             raise
         except:
             sleep(2)

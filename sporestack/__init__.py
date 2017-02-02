@@ -107,17 +107,9 @@ def node(days,
                               data=post_data,
                               timeout=TIMEOUT)
     except HTTPError as http_error:
-        if http_error.code != 200:
-            # Throw exception with output from endpoint..
-            raise Exception(http_error.read())
-            return False
-        else:
-            raise HTTPError
-            return False
-    except:
-        # Ugly hack.
-        raise HTTPError
-        return False
+        # Throw exception with output from endpoint..
+        # This needs another name.
+        raise ValueError(http_error.read())
     if http_return.getcode() == 200:
         data = yaml.safe_load(http_return.read())
         if 'deprecated' in data:
