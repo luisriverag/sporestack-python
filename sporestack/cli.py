@@ -66,6 +66,7 @@ def list(_):
                 if node[item] is not None:
                     print('{}: {}'.format(item, node[item]))
             print(ttl(node['end_of_life']))
+            print('')
     if we_said_something is False:
         print('No active nodes, but you have expired nodes.')
 
@@ -149,12 +150,26 @@ def sporestackfile_helper(days,
     return (json.dumps(data, sort_keys=True, indent=True))
 
 
-def node_info(uuid):
+def node_info_wrapper(args):
+    """
+    argparse wrapper for node_info()
+    """
+    print(node_info(uuid=args.uuid,
+                    attribute=args.attribute))
+
+
+def node_info(uuid, attribute=None):
+    """
+    attribute is a specific attribute that you want to return.
+    """
     node_file = '{}.json'.format(uuid)
     node_file_path = os.path.join(DOT_FILE_PATH, node_file)
     with open(node_file_path) as node_file:
         node = yaml.safe_load(node_file)
+    if attribute is None:
         return node
+    else:
+        return node[attribute]
 
 
 def ssh_wrapper(args):
@@ -397,6 +412,7 @@ def main():
     spawn_subparser.set_defaults(func=spawn_wrapper)
     list_subparser = subparser.add_parser('list', help='Lists nodes.')
     list_subparser.set_defaults(func=list)
+
     ssh_subparser = subparser.add_parser('ssh',
                                          help='Connect to node.')
     ssh_subparser.set_defaults(func=ssh_wrapper)
@@ -407,6 +423,14 @@ def main():
     ssh_subparser.add_argument('--command',
                                help='Command to run over SSH',
                                default=None)
+
+    node_info_sp = subparser.add_parser('node_info',
+                                        help='Return info about a node.')
+    node_info_sp.set_defaults(func=node_info_wrapper)
+    node_info_sp.add_argument('uuid', help='UUID of node to connect to.')
+    node_info_sp.add_argument('--attribute',
+                              help='Which attribute you want to return.',
+                              default=None)
 
     json_extractor_help = 'Helps you extract fields from json files.'
     json_extractor_subparser = subparser.add_parser('json_extractor',
