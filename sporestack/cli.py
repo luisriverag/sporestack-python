@@ -176,11 +176,18 @@ def ssh_wrapper(args):
     """
     argparse wrapper for ssh()
     """
-    possible_output = ssh(uuid=args.uuid,
-                          command=args.command,
-                          stdin=args.stdin)
-    if possible_output is not None:
-        print(possible_output, end='')
+    output = ssh(uuid=args.uuid,
+                 command=args.command,
+                 stdin=args.stdin)
+    if output is not None:
+        # Python 3 and 2 support, respectively.
+        try:
+            print(output['stdout'].decode('utf-8'), end='')
+            print(output['stderr'].decode('utf-8'), end='')
+        except:
+            print(output['stdout'], end='')
+            print(output['stderr'], end='')
+        exit(output['return_code'])
 
 
 def ssh(uuid, command=None, stdin=None):
@@ -189,6 +196,7 @@ def ssh(uuid, command=None, stdin=None):
     Probably want to split this into connectable and ssh?
     Much to do.
     Should support specifying a keyfile, maybe?
+    Consider paramiko or Fabric?
     """
     node = node_info(uuid)
     hostname = node['hostname']
@@ -200,19 +208,27 @@ def ssh(uuid, command=None, stdin=None):
         except:
             stderr('Waiting for node to come online.')
         sleep(2)
-    if command is None:
-        command = ''
-    run_command = ('ssh root@{} -p 22 -oStrictHostKeyChecking=no'
-                   ' -oUserKnownHostsFile=/dev/null \'{}\''.format(hostname,
-                                                                   command))
-    if stdin is None:
-        os.system(run_command)
-        return
-    run_command = ['ssh', '-l', 'root', hostname,
+    run_command = ['ssh', '-q', '-l', 'root', hostname,
                    '-oStrictHostKeyChecking=no',
-                   '-oUserKnownHostsFile=/dev/null',
-                   command]
-    process = Popen(run_command, stdin=PIPE, stderr=PIPE, stdout=PIPE)
+                   '-oUserKnownHostsFile=/dev/null']
+    if command is not None:
+        run_command.append(command)
+    else:
+        if stdin is None:
+            system_command = ''
+            for word in run_command:
+                system_command = '{} {}'.format(system_command, word)
+            # Easier than allocating a PTY and all.
+            os.system(system_command)
+            return
+    # For PTY-less operations.
+    # If you're passing stdin, you probably aren't trying to | sporestack ssh..
+    if stdin is not None:
+        popen_stdin = PIPE
+    else:
+        # But if you don't set --stdin...
+        popen_stdin = sys.stdin.fileno()
+    process = Popen(run_command, stdin=popen_stdin, stderr=PIPE, stdout=PIPE)
     # Python 2 and 3 compatibility
     try:
         stdin = bytes(stdin, 'utf-8')
@@ -220,13 +236,9 @@ def ssh(uuid, command=None, stdin=None):
         stdin = stdin
     _stdout, _stderr = process.communicate(stdin)
     return_code = process.wait()
-    if return_code != 0:
-        stderr(_stderr)
-        raise
-    try:
-        return _stdout.decode('utf-8')
-    except:
-        return _stdout
+    return {'stdout': _stdout,
+            'stderr': _stderr,
+            'return_code': return_code}
 
 
 def spawn_wrapper(args):
@@ -355,13 +367,11 @@ Press ctrl+c to abort.'''
     with open(node_file_path, 'w') as node_file:
         json.dump(node_dump, node_file)
     if postlaunch is not None:
-        print(ssh(uuid, stdin=postlaunch), end='')
+        print(ssh(uuid, stdin=postlaunch)['stdout'], end='')
     if connectafter is True:
         stderr(banner)
         ssh(uuid)
         stderr(banner)
-    else:
-        print(uuid)
 
 
 def nodemeup():
