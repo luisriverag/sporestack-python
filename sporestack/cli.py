@@ -368,10 +368,16 @@ Press ctrl+c to abort.'''
         json.dump(node_dump, node_file)
     if postlaunch is not None:
         print(ssh(uuid, stdin=postlaunch)['stdout'], end='')
+        return
     if connectafter is True:
         stderr(banner)
         ssh(uuid)
         stderr(banner)
+        return
+    else:
+        # Yuck
+        print(uuid)
+        return
 
 
 def nodemeup():
