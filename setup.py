@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-VERSION = '0.5.0'
+VERSION = '0.5.1'
 
 DOWNLOAD_URL = 'https://github.com/sporestack/sporestack-python/tarball/{}'
 

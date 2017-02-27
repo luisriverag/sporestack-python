@@ -95,7 +95,11 @@ class SporeStack():
 
         # There must be a better way to do this...
         if cloudinit is not None:
-            b64_cloudinit = b64encode(cloudinit)
+            # Python 3, 2 compatibility:
+            try:
+                b64_cloudinit = str(b64encode(bytes(cloudinit, 'utf-8')))
+            except:
+                b64_cloudinit = b64encode(cloudinit)
             pre_data['cloudinit'] = b64_cloudinit
         if sshkey is not None:
             pre_data['sshkey'] = _sshkey_strip(sshkey)

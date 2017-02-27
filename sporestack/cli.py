@@ -374,7 +374,13 @@ Press ctrl+c to abort.'''
     with open(node_file_path, 'w') as node_file:
         json.dump(node_dump, node_file)
     if postlaunch is not None:
-        print(ssh(uuid, stdin=postlaunch)['stdout'], end='')
+        # I need to fix this. Python 3/2 compatibility.
+        try:
+            print(ssh(uuid,
+                      stdin=postlaunch)['stdout'].decode('utf-8'), end='')
+        except:
+            print(ssh(uuid,
+                      stdin=postlaunch)['stdout'], end='')
         return
     if connectafter is True:
         stderr(banner)
