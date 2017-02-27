@@ -13,8 +13,8 @@ import sys
 from subprocess import Popen, PIPE
 
 import pyqrcode
-import sporestack
 import yaml
+from sporestack import SporeStack
 
 DOT_FILE_PATH = '{}/.sporestack'.format(os.getenv('HOME'))
 
@@ -247,6 +247,7 @@ def spawn_wrapper(args):
     Needs to be cleaned up.
     """
     spawn(uuid=args.uuid,
+          endpoint=args.endpoint,
           days=args.days,
           sshkey=args.ssh_key,
           launch=args.launch,
@@ -257,11 +258,11 @@ def spawn_wrapper(args):
           osid=args.osid,
           dcid=args.dcid,
           flavor=args.flavor,
-          paycode=args.paycode,
-          endpoint=args.endpoint)
+          paycode=args.paycode)
 
 
 def spawn(uuid,
+          endpoint,
           days=None,
           sshkey=None,
           launch=None,
@@ -275,8 +276,11 @@ def spawn(uuid,
           connectafter=True,
           launch_profile=None,
           cloudinit=None,
-          paycode=None,
-          endpoint=None):
+          paycode=None):
+    """
+    Spawn a node.
+    """
+    sporestack = SporeStack(endpoint=endpoint)
     if sshkey is not None:
         try:
             with open(sshkey) as ssh_key_file:
@@ -299,6 +303,7 @@ def spawn(uuid,
                 launch_profile = sporestackfile
         else:
             settings = sporestack.node_get_launch_profile(launch)
+            # For logging to json file further down.
             launch_profile = settings['name']
         # Iffy on this. Let's let the user pick the days.
         # days = settings['days']
@@ -318,8 +323,7 @@ def spawn(uuid,
                                    flavor=flavor,
                                    startupscript=startupscript,
                                    cloudinit=cloudinit,
-                                   paycode=paycode,
-                                   endpoint=endpoint)
+                                   paycode=paycode)
         except (ValueError, KeyboardInterrupt):
             raise
         except:
@@ -332,7 +336,10 @@ def spawn(uuid,
             uri = 'bitcoin:{}?amount={}'.format(node.address, amount)
             premessage = '''UUID: {}
 Bitcoin URI: {}
-Pay with Bitcoin. Resize your terminal and try again if QR code is not visible.
+Pay with Bitcoin *within 100 seconds*. QR code will change every
+so often but the current and previous QR code are both valid for
+about that much time.
+Resize your terminal and try again if QR code above is not readable.
 Press ctrl+c to abort.'''
             message = premessage.format(uuid,
                                         uri)
@@ -388,46 +395,55 @@ def nodemeup():
     exit(1)
 
 
-def main():
+def options(args):
+    """
+    Returns options.
+    """
+    sporestack = SporeStack(endpoint=args.endpoint)
     options = sporestack.node_options()
     launch_profiles = sporestack.node_get_launch_profile('index')
-
-    class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter,
-                          argparse.RawTextHelpFormatter):
-        """
-        This makes help honor newlines and shows defaults.
-        https://bugs.python.org/issue21633
-        http://stackoverflow.com/questions/18462610/
-        """
-        pass
-    parser = argparse.ArgumentParser(description='SporeStack.com CLI.')
-    launch_help = ''
-    for profile in launch_profiles:
-        launch_help += '{}: {}: {}\n'.format(profile['name'],
-                                             profile['human_name'],
-                                             profile['description'])
-    osid_help = ''
+    all_options = '\nOSID:\n'
     for osid in sorted(options['osid'], key=int):
         name = options['osid'][osid]['name']
-        osid_help += '{}: {}\n'.format(osid, name)
-    dcid_help = ''
+        all_options += '    {}: {}\n'.format(osid, name)
+    all_options += '\nDCID:\n'
     for dcid in sorted(options['dcid'], key=int):
         name = options['dcid'][dcid]['name']
-        dcid_help += '{}: {}\n'.format(dcid, name)
-    flavor_help = ''
+        all_options += '    {}: {}\n'.format(dcid, name)
+    all_options += '\nFlavor:\n'
     for flavor in sorted(options['flavor'], key=int):
-        help_line = '{}: RAM: {}, VCPUs: {}, DISK: {}\n'
+        help_line = '    {}: RAM: {}, VCPUs: {}, DISK: {}\n'
         ram = options['flavor'][flavor]['ram']
         disk = options['flavor'][flavor]['disk']
         vcpus = options['flavor'][flavor]['vcpu_count']
-        flavor_help += help_line.format(flavor, ram, vcpus, disk)
+        all_options += help_line.format(flavor, ram, vcpus, disk)
+    launch_help = '\nLaunch profiles:\n'
+    for profile in launch_profiles:
+        launch_help += '    {}: {}: {}\n'.format(profile['name'],
+                                                 profile['human_name'],
+                                                 profile['description'])
+
+    print(all_options)
+
+
+def main():
+    parser = argparse.ArgumentParser(description='SporeStack.com CLI.')
+    parser.add_argument('--endpoint',
+                        help='Use alternate SporeStack endpoint.',
+                        default='https://sporestack.com')
     subparser = parser.add_subparsers()
+    formatter_class = argparse.ArgumentDefaultsHelpFormatter
     spawn_subparser = subparser.add_parser('spawn',
                                            help='Spawns a node.',
-                                           formatter_class=CustomFormatter)
+                                           formatter_class=formatter_class)
     spawn_subparser.set_defaults(func=spawn_wrapper)
+
     list_subparser = subparser.add_parser('list', help='Lists nodes.')
     list_subparser.set_defaults(func=list)
+
+    msg = 'Show node options (flavor, osid, etc.)'
+    options_subparser = subparser.add_parser('options', help=msg)
+    options_subparser.set_defaults(func=options)
 
     ssh_subparser = subparser.add_parser('ssh',
                                          help='Connect to node.')
@@ -498,12 +514,15 @@ def main():
                                 default='text/plain')
 
     spawn_subparser.add_argument('--osid',
-                                 help=osid_help,
+                                 help='Operating System ID',
                                  type=int,
                                  default=230)
-    spawn_subparser.add_argument('--dcid', help=dcid_help, type=int, default=3)
+    spawn_subparser.add_argument('--dcid',
+                                 help='Datacenter ID',
+                                 type=int,
+                                 default=3)
     spawn_subparser.add_argument('--flavor',
-                                 help=flavor_help,
+                                 help='Flavor ID',
                                  type=int,
                                  default=29)
     spawn_subparser.add_argument('--days',
@@ -512,9 +531,6 @@ def main():
     spawn_subparser.add_argument('--uuid',
                                  help=argparse.SUPPRESS,
                                  default=str(random_uuid()))
-    spawn_subparser.add_argument('--endpoint',
-                                 help=argparse.SUPPRESS,
-                                 default=None)
     spawn_subparser.add_argument('--paycode',
                                  help=argparse.SUPPRESS,
                                  default=None)
@@ -523,7 +539,7 @@ def main():
                                  help='SSH public key.',
                                  default=default_ssh_key_path)
     spawn_subparser.add_argument('--launch',
-                                 help=launch_help,
+                                 help='Launch profile',
                                  default=None)
     spawn_subparser.add_argument('--sporestackfile',
                                  help='SporeStack JSON file.',
