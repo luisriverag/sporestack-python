@@ -11,6 +11,7 @@ from socket import create_connection
 import json
 import sys
 from subprocess import Popen, PIPE
+import warnings
 
 import pyqrcode
 import yaml
@@ -24,6 +25,9 @@ BANNER = '''
 {}
 End of Life: {} ({})
 '''
+
+# Show deprecation notices.
+warnings.simplefilter('always')
 
 
 def stderr(*args, **kwargs):
@@ -116,7 +120,7 @@ def sporestackfile_helper(days,
                           postlaunch=None,
                           mimetype=None,
                           dcid=None,
-                          flavor=29):
+                          flavor=None):
     """
     Helps you write sporestack.json files.
     """
@@ -418,11 +422,17 @@ def options(args):
         all_options += '    {}: {}\n'.format(dcid, name)
     all_options += '\nFlavor:\n'
     for flavor in sorted(options['flavor'], key=int):
-        help_line = '    {}: RAM: {}, VCPUs: {}, DISK: {}\n'
+        # Don't show deprecated flavors.
+        if options['flavor'][flavor]['deprecated'] is True:
+            continue
+        help_line = '    {}: RAM: {}, VCPUs: {}, DISK: {},' \
+                    'BW PER DAY: {}, BASE SATOSHIS PER DAY: {}\n'
         ram = options['flavor'][flavor]['ram']
         disk = options['flavor'][flavor]['disk']
         vcpus = options['flavor'][flavor]['vcpu_count']
-        all_options += help_line.format(flavor, ram, vcpus, disk)
+        bw = options['flavor'][flavor]['bw_per_day']
+        satoshis = options['flavor'][flavor]['base_satoshis_per_day']
+        all_options += help_line.format(flavor, ram, vcpus, disk, bw, satoshis)
     launch_help = '\nLaunch profiles:\n'
     for profile in launch_profiles:
         launch_help += '    {}: {}: {}\n'.format(profile['name'],
@@ -514,7 +524,7 @@ def main():
     ssfh_subparser.add_argument('--flavor',
                                 help='Flavor',
                                 type=int,
-                                default=29)
+                                default=None)
     ssfh_subparser.add_argument('--mimetype',
                                 help='Suggested MIME type of stdout',
                                 default='text/plain')
@@ -530,7 +540,7 @@ def main():
     spawn_subparser.add_argument('--flavor',
                                  help='Flavor ID',
                                  type=int,
-                                 default=29)
+                                 default=None)
     spawn_subparser.add_argument('--days',
                                  help='Days to live: 1-28.',
                                  type=int, default=1)
