@@ -262,6 +262,8 @@ def spawn_wrapper(args):
           osid=args.osid,
           dcid=args.dcid,
           flavor=args.flavor,
+          ipxe=args.ipxe,
+          ipxe_chain_url=args.ipxe_chain_url,
           paycode=args.paycode)
 
 
@@ -277,30 +279,34 @@ def spawn(uuid,
           flavor=None,
           startupscript=None,
           postlaunch=None,
-          connectafter=True,
           launch_profile=None,
           cloudinit=None,
+          ipxe=False,
+          ipxe_chain_url=None,
           paycode=None):
     """
     Spawn a node.
     """
     sporestack = SporeStack(endpoint=endpoint)
+    connectafter = False
     if sshkey is not None:
-        try:
-            with open(sshkey) as ssh_key_file:
-                sshkey = ssh_key_file.read()
-        except:
-            pre_message = 'Unable to open {}. Did you run ssh-keygen?'
-            message = pre_message.format(sshkey)
-            stderr(message)
-            exit(1)
+        if ipxe is False and ipxe_chain_url is None:
+            try:
+                with open(sshkey) as ssh_key_file:
+                    sshkey = ssh_key_file.read()
+            except:
+                pre_message = 'Unable to open {}. Did you run ssh-keygen?'
+                message = pre_message.format(sshkey)
+                stderr(message)
+                exit(1)
+            connectafter = True
+        else:
+            sshkey = None
     if startupscript is not None:
-        connectafter = False
         with open(startupscript) as startupscript_file:
             startupscript = startupscript_file.read()
     # Yuck.
     if sporestackfile is not None or launch is not None:
-        connectafter = False
         if sporestackfile is not None:
             with open(sporestackfile) as sporestack_json:
                 settings = yaml.safe_load(sporestack_json)
@@ -321,12 +327,14 @@ def spawn(uuid,
         try:
             node = sporestack.node(days=days,
                                    sshkey=sshkey,
-                                   unique=uuid,
+                                   uuid=uuid,
                                    osid=osid,
                                    dcid=dcid,
                                    flavor=flavor,
                                    startupscript=startupscript,
                                    cloudinit=cloudinit,
+                                   ipxe=ipxe,
+                                   ipxe_chain_url=ipxe_chain_url,
                                    paycode=paycode)
         except (ValueError, KeyboardInterrupt):
             raise
@@ -374,6 +382,7 @@ Press ctrl+c to abort.'''
                  'end_of_life': node.end_of_life,
                  'uuid': uuid,
                  'launch_profile': launch_profile,
+                 'kvm_url': node.kvm_url,
                  'group': group}
     with open(node_file_path, 'w') as node_file:
         json.dump(node_dump, node_file)
@@ -494,7 +503,8 @@ def main():
                                           help=ssfh_help)
     ssfh_subparser.set_defaults(func=sporestackfile_helper_wrapper)
     ssfh_subparser.add_argument('--cloudinit',
-                                help='cloudinit data.')
+                                help='cloudinit data.',
+                                default=None)
     ssfh_subparser.add_argument('--startupscript',
                                 help='startup script file.')
     ssfh_subparser.add_argument('--postlaunch',
@@ -532,11 +542,11 @@ def main():
     spawn_subparser.add_argument('--osid',
                                  help='Operating System ID',
                                  type=int,
-                                 default=230)
+                                 default=None)
     spawn_subparser.add_argument('--dcid',
                                  help='Datacenter ID',
                                  type=int,
-                                 default=3)
+                                 default=None)
     spawn_subparser.add_argument('--flavor',
                                  help='Flavor ID',
                                  type=int,
@@ -565,6 +575,13 @@ def main():
                                  default=None)
     spawn_subparser.add_argument('--cloudinit',
                                  help='cloudinit file.',
+                                 default=None)
+    spawn_subparser.add_argument('--ipxe',
+                                 help='Set if startup script is iPXE type.',
+                                 action='store_true',
+                                 default=False)
+    spawn_subparser.add_argument('--ipxe_chain_url',
+                                 help='iPXE URL to chainload.',
                                  default=None)
     spawn_subparser.add_argument('--group',
                                  help='Arbitrary group to associate node with',

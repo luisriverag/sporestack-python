@@ -29,10 +29,26 @@ def _sshkey_strip(sshkey):
     Strip comment field off of SSH key before we send it to SporeStack,
     in case it has any.
     """
+    if sshkey is None:
+        return None
     sshkey_prefix = sshkey.split(' ')[0]
     sshkey_key = sshkey.split(' ')[1]
     commentless_key = sshkey_prefix + ' ' + sshkey_key
     return commentless_key
+
+
+def _b64(data):
+    """
+    Returns base64 version of data.
+
+    try/except is for Python 3/2 compatibility.
+    """
+    if data is None:
+        return None
+    try:
+        return b64encode(bytes(data, 'utf-8')).decode('utf-8')
+    except:
+        return b64encode(data)
 
 
 class SporeStack():
@@ -68,10 +84,12 @@ class SporeStack():
 
     def node(self,
              days,
-             unique,
+             uuid,
              sshkey=None,
              cloudinit=None,
              startupscript=None,
+             ipxe=False,
+             ipxe_chain_url=None,
              osid=None,
              dcid=None,
              flavor=None,
@@ -90,35 +108,28 @@ class SporeStack():
         Must pay in 100 seconds or less! Satoshi padding changes.
         """
 
+        # Hrmph.
+        if ipxe_chain_url is not None:
+            ipxe = True
+
         pre_data = {'days': days,
-                    'unique': unique}
+                    'ipxe': ipxe,
+                    'ipxe_chain_url': ipxe_chain_url,
+                    'osid': osid,
+                    'dcid': dcid,
+                    'flavor': flavor,
+                    'paycode': paycode,
+                    'startupscript': startupscript,
+                    'sshkey': _sshkey_strip(sshkey),
+                    'cloudinit': _b64(cloudinit),
+                    'uuid': uuid}
 
-        # There must be a better way to do this...
-        if cloudinit is not None:
-            # Python 3, 2 compatibility:
-            try:
-                b64_cloudinit = str(b64encode(bytes(cloudinit, 'utf-8')))
-            except:
-                b64_cloudinit = b64encode(cloudinit)
-            pre_data['cloudinit'] = b64_cloudinit
-        if sshkey is not None:
-            pre_data['sshkey'] = _sshkey_strip(sshkey)
-        if startupscript is not None:
-            pre_data['startupscript'] = startupscript
-        if osid is not None:
-            pre_data['osid'] = osid
-        if dcid is not None:
-            pre_data['dcid'] = dcid
-        if flavor is not None:
-            pre_data['flavor'] = flavor
-        if paycode is not None:
-            pre_data['paycode'] = paycode
-
-        # Python 2 and 3 compatibility
+        # Python 3 and 2 compatibility
         try:
             post_data = bytes(json.dumps(pre_data), 'utf-8')
         except:
             post_data = json.dumps(pre_data)
+
         try:
             http_return = urlopen(self.endpoint + '/node',
                                   data=post_data,
@@ -127,11 +138,12 @@ class SporeStack():
             # Throw exception with output from endpoint..
             # This needs another name.
             raise ValueError(http_error.read())
+
         if http_return.getcode() == 200:
             data = yaml.safe_load(http_return.read())
-            if 'deprecated' in data:
-                if data['deprecated'] is not False:
-                    warn(str(data['deprecated']), DeprecationWarning)
+            if 'deprecated' in data and data['deprecated'] is not False:
+                warn(str(data['deprecated']), DeprecationWarning)
+            # Iffy on this.
             node = namedtuple('node',
                               data.keys())
             node.end_of_life = data['end_of_life']
@@ -142,6 +154,8 @@ class SporeStack():
             node.ip4 = data['ip4']
             node.ip6 = data['ip6']
             node.hostname = data['hostname']
+            node.kvm_url = data['kvm_url']
+
             return node
         else:
             raise Exception('Fatal issue with sporestack.')

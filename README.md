@@ -1,4 +1,4 @@
-Python library for http://sporestack.com/
+Python 2/3 library for http://sporestack.com/
 
 # Installation
 
@@ -36,7 +36,7 @@ Spawn a node.
 
 ```
 def node(days,
-         unique,
+         uuid,
          sshkey=None,
          cloudinit=None,
          startupscript=None,
@@ -51,6 +51,7 @@ def node(days,
     node.end_of_life
     node.ip6
     node.ip4
+    node.hostname
     """
 ```
 
