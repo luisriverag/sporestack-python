@@ -2,17 +2,19 @@
 
 from setuptools import setup
 
-VERSION = '0.6.0'
+VERSION = '0.6.1'
 
 DOWNLOAD_URL = 'https://github.com/sporestack/sporestack-python/tarball/{}'
+
+DESCRIPTION = 'SporeStack.com library and client. Launch servers with Bitcoin.'
 
 setup(
     name='sporestack',
     version=VERSION,
     author='Teran McKinney',
     author_email='sega01@go-beyond.org',
-    description='SporeStack.com library and client.',
-    keywords=['bitcoin', 'servers', 'infrastructure'],
+    description=DESCRIPTION,
+    keywords=['bitcoin', 'servers', 'infrastructure', 'vps', 'ephemeral'],
     license='Unlicense',
     url='https://sporestack.com/',
     download_url=DOWNLOAD_URL.format(VERSION),

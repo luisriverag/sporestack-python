@@ -33,6 +33,13 @@ def test_node_get_launch_profile():
     assert 'openvpn' in str(vpn)
 
 
+def test_node_get_launch_profiles():
+    index = SporeStack.node_get_launch_profiles()
+    assert 'minecraft' in str(index)
+    assert 'vpn' in str(index)
+    assert 'tor_relay' in str(index)
+
+
 def test_node():
     uuid = str(random_uuid())
     node = SporeStack.node(days=1, uuid=uuid, cloudinit='#!/bin/true')

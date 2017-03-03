@@ -72,7 +72,6 @@ class SporeStack():
     def node_get_launch_profile(self, profile):
         """
         Returns dict of launch instance.
-        Use 'index' if you want a list of all available.
         https://sporestack.com/launch
         """
         url = '{}/launch/{}.json'.format(self.endpoint, profile)
@@ -81,6 +80,12 @@ class SporeStack():
         if http_return.getcode() != 200:
             raise Exception('{} did not return HTTP 200.'.format(url))
         return yaml.safe_load(http_return.read())
+
+    def node_get_launch_profiles(self):
+        """
+        Returns a dict of launch profiles.
+        """
+        return self.node_get_launch_profile('index')
 
     def node(self,
              days,

@@ -22,7 +22,7 @@ DOT_FILE_PATH = '{}/.sporestack'.format(os.getenv('HOME'))
 default_ssh_key_path = '{}/.ssh/id_rsa.pub'.format(os.getenv('HOME'))
 
 BANNER = '''
-{}
+Hostname: {}
 End of Life: {} ({})
 '''
 
@@ -181,6 +181,7 @@ def ssh_wrapper(args):
     argparse wrapper for ssh()
     """
     output = ssh(uuid=args.uuid,
+                 ssh_user=args.ssh_user,
                  command=args.command,
                  stdin=args.stdin)
     if output is not None:
@@ -194,7 +195,7 @@ def ssh_wrapper(args):
         exit(output['return_code'])
 
 
-def ssh(uuid, command=None, stdin=None):
+def ssh(uuid, ssh_user='root', command=None, stdin=None):
     """
     Connects to node via SSH. Meant for terminals.
     Probably want to split this into connectable and ssh?
@@ -212,7 +213,7 @@ def ssh(uuid, command=None, stdin=None):
         except:
             stderr('Waiting for node to come online.')
         sleep(2)
-    run_command = ['ssh', '-q', '-l', 'root', hostname,
+    run_command = ['ssh', '-q', '-l', ssh_user, hostname,
                    '-oStrictHostKeyChecking=no',
                    '-oUserKnownHostsFile=/dev/null']
     if command is not None:
@@ -264,7 +265,9 @@ def spawn_wrapper(args):
           flavor=args.flavor,
           ipxe=args.ipxe,
           ipxe_chain_url=args.ipxe_chain_url,
-          paycode=args.paycode)
+          paycode=args.paycode,
+          ssh_connect=args.ssh,
+          ssh_user=args.ssh_user)
 
 
 def spawn(uuid,
@@ -283,12 +286,13 @@ def spawn(uuid,
           cloudinit=None,
           ipxe=False,
           ipxe_chain_url=None,
-          paycode=None):
+          paycode=None,
+          ssh_connect=False,
+          ssh_user='root'):
     """
     Spawn a node.
     """
     sporestack = SporeStack(endpoint=endpoint)
-    connectafter = False
     if sshkey is not None:
         if ipxe is False and ipxe_chain_url is None:
             try:
@@ -299,7 +303,6 @@ def spawn(uuid,
                 message = pre_message.format(sshkey)
                 stderr(message)
                 exit(1)
-            connectafter = True
         else:
             sshkey = None
     if startupscript is not None:
@@ -382,7 +385,6 @@ Press ctrl+c to abort.'''
                  'end_of_life': node.end_of_life,
                  'uuid': uuid,
                  'launch_profile': launch_profile,
-                 'kvm_url': node.kvm_url,
                  'group': group}
     with open(node_file_path, 'w') as node_file:
         json.dump(node_dump, node_file)
@@ -395,13 +397,17 @@ Press ctrl+c to abort.'''
             print(ssh(uuid,
                       stdin=postlaunch)['stdout'], end='')
         return
-    if connectafter is True:
+    if ipxe is True or ipxe_chain_url is not None:
+        stderr('KVM URL (you should write this down): {}'.format(node.kvm_url))
+    if ssh_connect is True:
         stderr(banner)
-        ssh(uuid)
+        ssh(uuid, ssh_user=ssh_user)
         stderr(banner)
         return
     else:
-        # Yuck
+        stderr(banner)
+        stderr('Run "sporestack ssh {}" to SSH into node.'.format(uuid))
+        # Write uuid for stdout.
         print(uuid)
         return
 
@@ -410,7 +416,7 @@ def nodemeup():
     """
     Ugly deprecation notice.
     """
-    print('nodemeup is deprecated. Please use "sporestack spawn", instead.')
+    print('nodemeup is deprecated. Try: "sporestack spawn --ssh"')
     exit(1)
 
 
@@ -420,7 +426,7 @@ def options(args):
     """
     sporestack = SporeStack(endpoint=args.endpoint)
     options = sporestack.node_options()
-    launch_profiles = sporestack.node_get_launch_profile('index')
+    launch_profiles = sporestack.node_get_launch_profiles()
     all_options = '\nOSID:\n'
     for osid in sorted(options['osid'], key=int):
         name = options['osid'][osid]['name']
@@ -480,6 +486,9 @@ def main():
     ssh_subparser.add_argument('--command',
                                help='Command to run over SSH',
                                default=None)
+    ssh_subparser.add_argument('--ssh_user',
+                               help='Connect as user over SSH.',
+                               default='root')
 
     node_info_sp = subparser.add_parser('node_info',
                                         help='Return info about a node.')
@@ -564,6 +573,13 @@ def main():
     spawn_subparser.add_argument('--ssh_key',
                                  help='SSH public key.',
                                  default=default_ssh_key_path)
+    spawn_subparser.add_argument('--ssh',
+                                 help='Connect after spawning',
+                                 action='store_true',
+                                 default=False)
+    spawn_subparser.add_argument('--ssh_user',
+                                 help='Connect as user over SSH.',
+                                 default='root')
     spawn_subparser.add_argument('--launch',
                                  help='Launch profile',
                                  default=None)
