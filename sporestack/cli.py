@@ -412,6 +412,64 @@ Press ctrl+c to abort.'''
         return
 
 
+def topup(args):
+    """
+    So much duplicate code. Yuck!!
+    """
+    sporestack = SporeStack(endpoint=args.endpoint)
+    earlier_satoshis = None
+    while True:
+        try:
+            node = sporestack.node_topup(days=args.days,
+                                         uuid=args.uuid,
+                                         paycode=args.paycode)
+        except (ValueError, KeyboardInterrupt):
+            raise
+        except:
+            sleep(2)
+            stderr('Issue with SporeStack, retrying...')
+            continue
+        if node.payment_status is False:
+            amount = "{0:.8f}".format(node.satoshis *
+                                      0.00000001)
+            uri = 'bitcoin:{}?amount={}'.format(node.address, amount)
+            premessage = '''UUID to topup: {}
+Bitcoin URI: {}
+Pay with Bitcoin *within 100 seconds*. QR code will change every so often
+but the current and previous QR code are both valid for about that much time.
+Resize your terminal and try again if QR code above is not readable.
+Press ctrl+c to abort.'''
+            message = premessage.format(args.uuid,
+                                        uri)
+            qr = pyqrcode.create(uri)
+            if earlier_satoshis != node.satoshis:
+                if earlier_satoshis is not None:
+                    stderr('Payment changed, refreshing QR.')
+                stderr(qr.terminal(module_color='black',
+                                   background='white',
+                                   quiet_zone=1))
+                stderr(message)
+                earlier_satoshis = node.satoshis
+        else:
+            break
+        sleep(2)
+    print('{} topped up.'.format(args.uuid))
+    # Load existing node data if available.
+    try:
+        node_dump = node_info(args.uuid)
+    except:
+        node_dump = {'uuid': args.uuid}
+        if not os.path.isdir(DOT_FILE_PATH):
+            os.mkdir(DOT_FILE_PATH, 0o700)
+    node_dump['end_of_life'] = node.end_of_life
+    # So redundant. Needs its own function, including os.mkdir
+    node_file = '{}.json'.format(args.uuid)
+    node_file_path = os.path.join(DOT_FILE_PATH, node_file)
+    with open(node_file_path, 'w') as node_file:
+        json.dump(node_dump, node_file)
+    exit(0)
+
+
 def nodemeup():
     """
     Ugly deprecation notice.
@@ -464,10 +522,6 @@ def main():
                         default='https://sporestack.com')
     subparser = parser.add_subparsers()
     formatter_class = argparse.ArgumentDefaultsHelpFormatter
-    spawn_subparser = subparser.add_parser('spawn',
-                                           help='Spawns a node.',
-                                           formatter_class=formatter_class)
-    spawn_subparser.set_defaults(func=spawn_wrapper)
 
     list_subparser = subparser.add_parser('list', help='Lists nodes.')
     list_subparser.set_defaults(func=list)
@@ -548,6 +602,11 @@ def main():
                                 help='Suggested MIME type of stdout',
                                 default='text/plain')
 
+    spawn_subparser = subparser.add_parser('spawn',
+                                           help='Spawns a node.',
+                                           formatter_class=formatter_class)
+    spawn_subparser.set_defaults(func=spawn_wrapper)
+
     spawn_subparser.add_argument('--osid',
                                  help='Operating System ID',
                                  type=int,
@@ -602,6 +661,22 @@ def main():
     spawn_subparser.add_argument('--group',
                                  help='Arbitrary group to associate node with',
                                  default=None)
+
+    topup_subparser = subparser.add_parser('topup',
+                                           help='Top up a node.',
+                                           formatter_class=formatter_class)
+    topup_subparser.set_defaults(func=topup)
+    topup_subparser.add_argument('--uuid',
+                                 help='UUID to top up.',
+                                 required=True)
+    topup_subparser.add_argument('--days',
+                                 help='Additional days to live: 1-28.',
+                                 type=int,
+                                 required=True)
+    topup_subparser.add_argument('--paycode',
+                                 help=argparse.SUPPRESS,
+                                 default=None)
+
     args = parser.parse_args()
     # This calls the function or wrapper function, depending on what we set
     # above.

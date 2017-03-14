@@ -164,3 +164,54 @@ class SporeStack():
             return node
         else:
             raise Exception('Fatal issue with sporestack.')
+
+    def node_topup(self,
+                   days,
+                   uuid,
+                   paycode=None):
+        """
+        Lets you raise the end_of_life on a node.
+
+        Returns:
+        node.payment_status
+        node.end_of_life
+        node.satoshis
+        node.address
+
+        Should pay in 100 seconds or less! Satoshi padding changes.
+        """
+
+        pre_data = {'days': days,
+                    'paycode': paycode,
+                    'uuid': uuid}
+
+        # Python 3 and 2 compatibility
+        try:
+            post_data = bytes(json.dumps(pre_data), 'utf-8')
+        except:
+            post_data = json.dumps(pre_data)
+
+        try:
+            http_return = urlopen(self.endpoint + '/node/topup',
+                                  data=post_data,
+                                  timeout=TIMEOUT)
+        except HTTPError as http_error:
+            # Throw exception with output from endpoint..
+            # This needs another name.
+            raise ValueError(http_error.read())
+
+        if http_return.getcode() == 200:
+            data = yaml.safe_load(http_return.read())
+            if 'deprecated' in data and data['deprecated'] is not False:
+                warn(str(data['deprecated']), DeprecationWarning)
+            # Iffy on this.
+            node = namedtuple('node',
+                              data.keys())
+            node.end_of_life = data['end_of_life']
+            node.payment_status = data['payment_status']
+            node.address = data['address']
+            node.satoshis = data['satoshis']
+
+            return node
+        else:
+            raise Exception('Fatal issue with sporestack.')
