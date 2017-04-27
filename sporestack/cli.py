@@ -267,7 +267,8 @@ def spawn_wrapper(args):
           ipxe_chain_url=args.ipxe_chain_url,
           paycode=args.paycode,
           ssh_connect=args.ssh,
-          ssh_user=args.ssh_user)
+          ssh_user=args.ssh_user,
+          wallet_command=args.wallet_command)
 
 
 def spawn(uuid,
@@ -288,7 +289,8 @@ def spawn(uuid,
           ipxe_chain_url=None,
           paycode=None,
           ssh_connect=False,
-          ssh_user='root'):
+          ssh_user='root',
+          wallet_command=None):
     """
     Spawn a node.
     """
@@ -326,6 +328,7 @@ def spawn(uuid,
         postlaunch = settings['postlaunch']
         cloudinit = settings['cloudinit']
     earlier_satoshis = None
+    ran_once = False
     while True:
         try:
             node = sporestack.node(days=days,
@@ -348,25 +351,37 @@ def spawn(uuid,
         if node.payment_status is False:
             amount = "{0:.8f}".format(node.satoshis *
                                       0.00000001)
-            uri = 'bitcoin:{}?amount={}'.format(node.address, amount)
-            premessage = '''UUID: {}
+            if wallet_command is None:
+                uri = 'bitcoin:{}?amount={}'.format(node.address, amount)
+                premessage = '''UUID: {}
 Bitcoin URI: {}
-Pay with Bitcoin *within 100 seconds*. QR code will change every
-so often but the current and previous QR code are both valid for
-about that much time.
+Pay with Bitcoin *within an hour*. QR code will change every so often but the
+current and previous QR codes are both valid for about an hour. The faster you
+make payment, the better. Pay *exactly* the specified amount. No more, no less.
 Resize your terminal and try again if QR code above is not readable.
 Press ctrl+c to abort.'''
-            message = premessage.format(uuid,
-                                        uri)
-            qr = pyqrcode.create(uri)
-            if earlier_satoshis != node.satoshis:
-                if earlier_satoshis is not None:
-                    stderr('Payment changed, refreshing QR.')
-                stderr(qr.terminal(module_color='black',
-                                   background='white',
-                                   quiet_zone=1))
-                stderr(message)
-                earlier_satoshis = node.satoshis
+                message = premessage.format(uuid,
+                                            uri)
+                qr = pyqrcode.create(uri)
+                if earlier_satoshis != node.satoshis:
+                    if earlier_satoshis is not None:
+                        stderr('Payment changed, refreshing QR.')
+                    stderr(qr.terminal(module_color='black',
+                                       background='white',
+                                       quiet_zone=1))
+                    stderr(message)
+                    earlier_satoshis = node.satoshis
+            else:
+                if ran_once is True:
+                    continue
+                # Yuck.
+                full_wallet_command = '{} {} {} >&2'.format(wallet_command,
+                                                        node.address,
+                                                        node.satoshis)
+                return_code = os.system(full_wallet_command)
+                if return_code != 0:
+                    raise
+                ran_once = True
         else:
             stderr('Node being built...')
         if node.creation_status is True:
@@ -660,6 +675,10 @@ def main():
                                  default=None)
     spawn_subparser.add_argument('--group',
                                  help='Arbitrary group to associate node with',
+                                 default=None)
+    help_text = 'Run payment with (command) (address) (satoshis)'
+    spawn_subparser.add_argument('--wallet_command',
+                                 help=help_text,
                                  default=None)
 
     topup_subparser = subparser.add_parser('topup',
