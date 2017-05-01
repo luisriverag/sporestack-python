@@ -93,6 +93,35 @@ def json_extractor(json_file, json_key):
         return data[json_key]
 
 
+def handle_payment(uuid, address, satoshis, wallet_command):
+    """
+    Payment handling routine for spawn and topup.
+    """
+    if wallet_command is not None:
+        full_wallet_command = '{} {} {} >&2'.format(wallet_command,
+                                                    address,
+                                                    satoshis)
+        if os.system(full_wallet_command) != 0:
+            raise
+        return True
+    amount = "{0:.8f}".format(satoshis *
+                              0.00000001)
+    uri = 'bitcoin:{}?amount={}'.format(address, amount)
+    premessage = '''UUID: {}
+Bitcoin URI: {}
+Pay with Bitcoin *within an hour*. QR code will change every so often but the
+current and previous QR codes are both valid for about an hour. The faster you
+make payment, the better. Pay *exactly* the specified amount. No more, no less.
+Resize your terminal and try again if QR code above is not readable.
+Press ctrl+c to abort.'''
+    message = premessage.format(uuid, uri)
+    qr = pyqrcode.create(uri)
+    stderr(qr.terminal(module_color='black',
+                       background='white',
+                       quiet_zone=1))
+    stderr(message)
+
+
 def sporestackfile_helper_wrapper(args):
     """
     argparse wrapper for sporestack_helper
@@ -327,7 +356,6 @@ def spawn(uuid,
         startupscript = settings['startupscript']
         postlaunch = settings['postlaunch']
         cloudinit = settings['cloudinit']
-    earlier_satoshis = None
     ran_once = False
     while True:
         try:
@@ -349,39 +377,10 @@ def spawn(uuid,
             stderr('Issue with SporeStack, retrying...')
             continue
         if node.payment_status is False:
-            amount = "{0:.8f}".format(node.satoshis *
-                                      0.00000001)
-            if wallet_command is None:
-                uri = 'bitcoin:{}?amount={}'.format(node.address, amount)
-                premessage = '''UUID: {}
-Bitcoin URI: {}
-Pay with Bitcoin *within an hour*. QR code will change every so often but the
-current and previous QR codes are both valid for about an hour. The faster you
-make payment, the better. Pay *exactly* the specified amount. No more, no less.
-Resize your terminal and try again if QR code above is not readable.
-Press ctrl+c to abort.'''
-                message = premessage.format(uuid,
-                                            uri)
-                qr = pyqrcode.create(uri)
-                if earlier_satoshis != node.satoshis:
-                    if earlier_satoshis is not None:
-                        stderr('Payment changed, refreshing QR.')
-                    stderr(qr.terminal(module_color='black',
-                                       background='white',
-                                       quiet_zone=1))
-                    stderr(message)
-                    earlier_satoshis = node.satoshis
-            else:
-                if ran_once is True:
-                    continue
-                # Yuck.
-                full_wallet_command = '{} {} {} >&2'.format(wallet_command,
-                                                        node.address,
-                                                        node.satoshis)
-                return_code = os.system(full_wallet_command)
-                if return_code != 0:
-                    raise
-                ran_once = True
+            if ran_once is True:
+                continue
+            handle_payment(uuid, node.address, node.satoshis, wallet_command)
+            ran_once = True
         else:
             stderr('Node being built...')
         if node.creation_status is True:
@@ -429,10 +428,10 @@ Press ctrl+c to abort.'''
 
 def topup(args):
     """
-    So much duplicate code. Yuck!!
+    topup a node.
     """
     sporestack = SporeStack(endpoint=args.endpoint)
-    earlier_satoshis = None
+    ran_once = False
     while True:
         try:
             node = sporestack.node_topup(days=args.days,
@@ -445,26 +444,11 @@ def topup(args):
             stderr('Issue with SporeStack, retrying...')
             continue
         if node.payment_status is False:
-            amount = "{0:.8f}".format(node.satoshis *
-                                      0.00000001)
-            uri = 'bitcoin:{}?amount={}'.format(node.address, amount)
-            premessage = '''UUID to topup: {}
-Bitcoin URI: {}
-Pay with Bitcoin *within 100 seconds*. QR code will change every so often
-but the current and previous QR code are both valid for about that much time.
-Resize your terminal and try again if QR code above is not readable.
-Press ctrl+c to abort.'''
-            message = premessage.format(args.uuid,
-                                        uri)
-            qr = pyqrcode.create(uri)
-            if earlier_satoshis != node.satoshis:
-                if earlier_satoshis is not None:
-                    stderr('Payment changed, refreshing QR.')
-                stderr(qr.terminal(module_color='black',
-                                   background='white',
-                                   quiet_zone=1))
-                stderr(message)
-                earlier_satoshis = node.satoshis
+            if ran_once is True:
+                continue
+            handle_payment(args.uuid, node.address, node.satoshis,
+                           args.wallet_command)
+            ran_once = True
         else:
             break
         sleep(2)
@@ -694,6 +678,10 @@ def main():
                                  required=True)
     topup_subparser.add_argument('--paycode',
                                  help=argparse.SUPPRESS,
+                                 default=None)
+    help_text = 'Run payment with (command) (address) (satoshis)'
+    topup_subparser.add_argument('--wallet_command',
+                                 help=help_text,
                                  default=None)
 
     args = parser.parse_args()

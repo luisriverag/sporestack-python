@@ -55,6 +55,10 @@ def node(days,
     """
 ```
 
+# Notes
+
+You can use --wallet_command if you don't want to pay by QR codes all the time.
+
 # Example SporeStack files
 
 https://github.com/sporestack/node-profiles
