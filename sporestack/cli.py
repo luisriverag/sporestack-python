@@ -333,7 +333,7 @@ def spawn(uuid,
                 pre_message = 'Unable to open {}. Did you run ssh-keygen?'
                 message = pre_message.format(sshkey)
                 stderr(message)
-                exit(1)
+                sshkey = None
         else:
             sshkey = None
     if startupscript is not None:
