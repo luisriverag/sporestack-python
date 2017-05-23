@@ -519,7 +519,8 @@ def main():
     parser.add_argument('--endpoint',
                         help='Use alternate SporeStack endpoint.',
                         default='https://sporestack.com')
-    subparser = parser.add_subparsers()
+    subparser = parser.add_subparsers(title='Command', dest='command')
+    subparser.required = True
     formatter_class = argparse.ArgumentDefaultsHelpFormatter
 
     list_subparser = subparser.add_parser('list', help='Lists nodes.')
