@@ -22,7 +22,7 @@ Spawn a tor relay for 28 days:
 $ sporestack spawn --launch tor_relay
 ```
 
-*To be on the safe side you should reset the root password once the server is online.*
+**To be on the safe side you should reset the root password once the server is online.**
 
 View available options (osid, dcid, flavor) as a dict.
 
