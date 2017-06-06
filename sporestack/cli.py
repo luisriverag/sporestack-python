@@ -7,11 +7,11 @@ import argparse
 from uuid import uuid4 as random_uuid
 from time import sleep, time
 import os
-from socket import create_connection
 import json
 import sys
-from subprocess import Popen, PIPE
+import subprocess
 import warnings
+from socket import gethostbyname
 
 import pyqrcode
 import yaml
@@ -214,13 +214,14 @@ def ssh_wrapper(args):
                  command=args.command,
                  stdin=args.stdin)
     if output is not None:
-        # Python 3 and 2 support, respectively.
-        try:
-            print(output['stdout'].decode('utf-8'), end='')
-            print(output['stderr'].decode('utf-8'), end='')
-        except:
-            print(output['stdout'], end='')
-            print(output['stderr'], end='')
+        if 'stdout' in output and 'stderr' in output:
+            # Python 3 and 2 support, respectively.
+            try:
+                print(output['stdout'].decode('utf-8'), end='')
+                print(output['stderr'].decode('utf-8'), end='')
+            except:
+                print(output['stdout'], end='')
+                print(output['stderr'], end='')
         exit(output['return_code'])
 
 
@@ -232,37 +233,44 @@ def ssh(uuid, ssh_user='root', command=None, stdin=None):
     Should support specifying a keyfile, maybe?
     Consider paramiko or Fabric?
     """
-    node = node_info(uuid)
-    hostname = node['hostname']
-    while True:
-        try:
-            socket = create_connection((hostname, 22), timeout=2)
-            socket.close()
-            break
-        except:
-            stderr('Waiting for node to come online.')
-        sleep(2)
+    # Hacky...
+    hostname = uuid + '.node.sporestack.com.'
+    try:
+        gethostbyname(hostname)
+    except:
+        raise Exception('Hostname not found. Did the server expire?')
+    # Python Lists are strange so we are doing this strangely.
     run_command = ['ssh', '-q', '-l', ssh_user, hostname,
+                   '-oConnectTimeout=10',
                    '-oStrictHostKeyChecking=no',
-                   '-oUserKnownHostsFile=/dev/null']
+                   '-oUserKnownHostsFile=/dev/null',
+                   'true']
+    # Hacky way to wait for it to come online.
+    # stdin's default of None != os.devnull. Seriously?
+    # If we don't discard stdin, it gets eaten.
+    while True:
+        with open(os.devnull, 'w') as devnull:
+            if subprocess.call(run_command, stdin=devnull) == 0:
+                break
+        stderr('Waiting for node to come online.')
+        sleep(3)
+    # Drop true...
+    run_command.pop()
     if command is not None:
         run_command.append(command)
-    else:
-        if stdin is None:
-            system_command = ''
-            for word in run_command:
-                system_command = '{} {}'.format(system_command, word)
-            # Easier than allocating a PTY and all.
-            os.system(system_command)
-            return
+    if stdin is None:
+        return {'return_code': subprocess.call(run_command)}
     # For PTY-less operations.
     # If you're passing stdin, you probably aren't trying to | sporestack ssh..
     if stdin is not None:
-        popen_stdin = PIPE
+        popen_stdin = subprocess.PIPE
     else:
         # But if you don't set --stdin...
         popen_stdin = sys.stdin.fileno()
-    process = Popen(run_command, stdin=popen_stdin, stderr=PIPE, stdout=PIPE)
+    process = subprocess.Popen(run_command,
+                               stdin=popen_stdin,
+                               stderr=subprocess.PIPE,
+                               stdout=subprocess.PIPE)
     # Python 2 and 3 compatibility
     try:
         stdin = bytes(stdin, 'utf-8')
