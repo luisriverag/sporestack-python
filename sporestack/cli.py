@@ -497,7 +497,7 @@ def options(args):
         name = options['osid'][osid]['name']
         all_options += '    {}: {}\n'.format(osid, name)
     all_options += '\nDCID:\n'
-    for dcid in sorted(options['dcid'], key=int):
+    for dcid in sorted(options['dcid']):
         name = options['dcid'][dcid]['name']
         all_options += '    {}: {}\n'.format(dcid, name)
     all_options += '\nFlavor:\n'
@@ -621,7 +621,6 @@ def main():
                                  default=None)
     spawn_subparser.add_argument('--dcid',
                                  help='Datacenter ID',
-                                 type=int,
                                  default=None)
     spawn_subparser.add_argument('--flavor',
                                  help='Flavor ID',
