@@ -1,14 +1,16 @@
-Python 2/3 library for http://sporestack.com/
+# Python 2/3 library for http://sporestack.com/
 
-# Installation
+## Installation
 
-* `pip install sporestack`
+Python 3 is recommended.
 
-# In action
+* `pip3 install sporestack || pip install sporestack`
+
+## In action
 
 [![asciicast](https://asciinema.org/a/98672.png)](https://asciinema.org/a/98672)
 
-# Usage
+## Usage
 
 Use the helper application:
 
@@ -20,6 +22,12 @@ Spawn a tor relay for 28 days:
 
 ```
 $ sporestack spawn --launch tor_relay
+```
+
+Spawn and pay with Bitcoin Cash:
+
+```
+$ sporestack spawn --currency bch
 ```
 
 **To be on the safe side you should reset the root password once the server is online.**

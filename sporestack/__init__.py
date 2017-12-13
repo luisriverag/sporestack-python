@@ -15,9 +15,6 @@ try:
 except ImportError:
     from urllib2 import urlopen, HTTPError
 
-import yaml
-
-
 DEFAULT_ENDPOINT = 'https://sporestack.com'
 
 TIMEOUT = 60
@@ -67,7 +64,7 @@ class SporeStack():
         if http_return.getcode() != 200:
             msg = 'SporeStack /node/options did not return HTTP 200.'
             raise Exception(msg)
-        return yaml.safe_load(http_return.read())
+        return json.loads(http_return.read().decode('utf-8'))
 
     def node_get_launch_profile(self, profile):
         """
@@ -79,7 +76,7 @@ class SporeStack():
                               timeout=OPTIONS_TIMEOUT)
         if http_return.getcode() != 200:
             raise Exception('{} did not return HTTP 200.'.format(url))
-        return yaml.safe_load(http_return.read())
+        return json.loads(http_return.read().decode('utf-8'))
 
     def node_get_launch_profiles(self):
         """
@@ -98,7 +95,8 @@ class SporeStack():
              osid=None,
              dcid=None,
              flavor=None,
-             paycode=None):
+             paycode=None,
+             currency='btc'):
         """
         Returns a node
 
@@ -109,8 +107,6 @@ class SporeStack():
         node.ip4
         node.satoshis
         node.address
-
-        Must pay in 100 seconds or less! Satoshi padding changes.
         """
 
         # Hrmph.
@@ -127,7 +123,8 @@ class SporeStack():
                     'startupscript': startupscript,
                     'sshkey': _sshkey_strip(sshkey),
                     'cloudinit': _b64(cloudinit),
-                    'uuid': uuid}
+                    'uuid': uuid,
+                    'currency': currency}
 
         # Python 3 and 2 compatibility
         try:
@@ -145,7 +142,7 @@ class SporeStack():
             raise ValueError(http_error.read())
 
         if http_return.getcode() == 200:
-            data = yaml.safe_load(http_return.read())
+            data = json.loads(http_return.read().decode('utf-8'))
             if 'deprecated' in data and data['deprecated'] is not False:
                 warn(str(data['deprecated']), DeprecationWarning)
             # Iffy on this.
@@ -168,7 +165,8 @@ class SporeStack():
     def node_topup(self,
                    days,
                    uuid,
-                   paycode=None):
+                   paycode=None,
+                   currency='btc'):
         """
         Lets you raise the end_of_life on a node.
 
@@ -183,7 +181,8 @@ class SporeStack():
 
         pre_data = {'days': days,
                     'paycode': paycode,
-                    'uuid': uuid}
+                    'uuid': uuid,
+                    'currency': currency}
 
         # Python 3 and 2 compatibility
         try:
@@ -201,7 +200,7 @@ class SporeStack():
             raise ValueError(http_error.read())
 
         if http_return.getcode() == 200:
-            data = yaml.safe_load(http_return.read())
+            data = json.loads(http_return.read().decode('utf-8'))
             if 'deprecated' in data and data['deprecated'] is not False:
                 warn(str(data['deprecated']), DeprecationWarning)
             # Iffy on this.

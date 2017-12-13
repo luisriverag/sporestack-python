@@ -14,7 +14,6 @@ import warnings
 from socket import gethostbyname
 
 import pyqrcode
-import yaml
 from sporestack import SporeStack
 
 DOT_FILE_PATH = '{}/.sporestack'.format(os.getenv('HOME'))
@@ -89,11 +88,11 @@ def json_extractor(json_file, json_key):
     extracting scripts.
     """
     with open(json_file) as json:
-        data = yaml.safe_load(json)
+        data = json.load(json)
         return data[json_key]
 
 
-def handle_payment(uuid, address, satoshis, wallet_command):
+def handle_payment(uuid, address, satoshis, wallet_command, currency):
     """
     Payment handling routine for spawn and topup.
     """
@@ -106,7 +105,12 @@ def handle_payment(uuid, address, satoshis, wallet_command):
         return True
     amount = "{0:.8f}".format(satoshis *
                               0.00000001)
-    uri = 'bitcoin:{}?amount={}'.format(address, amount)
+    if currency == 'btc':
+        uri = 'bitcoin:{}?amount={}'.format(address, amount)
+    elif currency == 'bch':
+        uri = 'bitcoincash:{}?amount={}'.format(address, amount)
+    else:
+        raise ValueError('Currency must be one of: btc, bch')
     premessage = '''UUID: {}
 Bitcoin URI: {}
 Pay with Bitcoin *within an hour*. QR code will change every so often but the
@@ -198,7 +202,7 @@ def node_info(uuid, attribute=None):
     node_file = '{}.json'.format(uuid)
     node_file_path = os.path.join(DOT_FILE_PATH, node_file)
     with open(node_file_path) as node_file:
-        node = yaml.safe_load(node_file)
+        node = json.load(node_file)
     if attribute is None:
         return node
     else:
@@ -305,7 +309,8 @@ def spawn_wrapper(args):
           paycode=args.paycode,
           ssh_connect=args.ssh,
           ssh_user=args.ssh_user,
-          wallet_command=args.wallet_command)
+          wallet_command=args.wallet_command,
+          currency=args.currency)
 
 
 def spawn(uuid,
@@ -327,7 +332,8 @@ def spawn(uuid,
           paycode=None,
           ssh_connect=False,
           ssh_user='root',
-          wallet_command=None):
+          wallet_command=None,
+          currency='btc'):
     """
     Spawn a node.
     """
@@ -351,7 +357,7 @@ def spawn(uuid,
     if sporestackfile is not None or launch is not None:
         if sporestackfile is not None:
             with open(sporestackfile) as sporestack_json:
-                settings = yaml.safe_load(sporestack_json)
+                settings = json.load(sporestack_json)
                 launch_profile = sporestackfile
         else:
             settings = sporestack.node_get_launch_profile(launch)
@@ -377,7 +383,8 @@ def spawn(uuid,
                                    cloudinit=cloudinit,
                                    ipxe=ipxe,
                                    ipxe_chain_url=ipxe_chain_url,
-                                   paycode=paycode)
+                                   paycode=paycode,
+                                   currency=currency)
         except (ValueError, KeyboardInterrupt):
             raise
         except:
@@ -387,7 +394,11 @@ def spawn(uuid,
         if node.payment_status is False:
             if ran_once is True:
                 continue
-            handle_payment(uuid, node.address, node.satoshis, wallet_command)
+            handle_payment(uuid,
+                           node.address,
+                           node.satoshis,
+                           wallet_command,
+                           currency)
             ran_once = True
         else:
             stderr('Node being built...')
@@ -477,14 +488,6 @@ def topup(args):
     exit(0)
 
 
-def nodemeup():
-    """
-    Ugly deprecation notice.
-    """
-    print('nodemeup is deprecated. Try: "sporestack spawn --ssh"')
-    exit(1)
-
-
 def options(args):
     """
     Returns options.
@@ -505,14 +508,19 @@ def options(args):
         # Don't show deprecated flavors.
         if options['flavor'][flavor]['deprecated'] is True:
             continue
-        help_line = '    {}: RAM: {}, VCPUs: {}, DISK: {},' \
-                    'BW PER DAY: {}, BASE SATOSHIS PER DAY: {}\n'
+        help_line = '    {}: RAM: {}, VCPUs: {}, DISK: {}, ' \
+                    'BW PER DAY: {}, CENTS PER DAY: {}\n'
         ram = options['flavor'][flavor]['ram']
         disk = options['flavor'][flavor]['disk']
         vcpus = options['flavor'][flavor]['vcpu_count']
         bw = options['flavor'][flavor]['bw_per_day']
-        satoshis = options['flavor'][flavor]['base_satoshis_per_day']
-        all_options += help_line.format(flavor, ram, vcpus, disk, bw, satoshis)
+        cents_per_day = options['flavor'][flavor]['cents_per_day']
+        all_options += help_line.format(flavor,
+                                        ram,
+                                        vcpus,
+                                        disk,
+                                        bw,
+                                        cents_per_day)
     launch_help = '\nLaunch profiles:\n'
     for profile in launch_profiles:
         launch_help += '    {}: {}: {}\n'.format(profile['name'],
@@ -668,6 +676,9 @@ def main():
     spawn_subparser.add_argument('--group',
                                  help='Arbitrary group to associate node with',
                                  default=None)
+    spawn_subparser.add_argument('--currency',
+                                 help='Cryptocurrency to pay with',
+                                 default='btc')
     help_text = 'Run payment with (command) (address) (satoshis)'
     spawn_subparser.add_argument('--wallet_command',
                                  help=help_text,
@@ -687,6 +698,9 @@ def main():
     topup_subparser.add_argument('--paycode',
                                  help=argparse.SUPPRESS,
                                  default=None)
+    topup_subparser.add_argument('--currency',
+                                 help='Cryptocurrency to pay with',
+                                 default='btc')
     help_text = 'Run payment with (command) (address) (satoshis)'
     topup_subparser.add_argument('--wallet_command',
                                  help=help_text,

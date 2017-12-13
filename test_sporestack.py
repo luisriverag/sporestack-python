@@ -1,7 +1,7 @@
 from uuid import uuid4 as random_uuid
 
 import sporestack
-
+from nose.tools import raises
 
 SporeStack = sporestack.SporeStack()
 
@@ -43,5 +43,18 @@ def test_node_get_launch_profiles():
 def test_node():
     uuid = str(random_uuid())
     node = SporeStack.node(days=1, uuid=uuid, cloudinit='#!/bin/true')
-    assert node.satoshis > 20000
+    assert node.satoshis > 10000
     assert node.satoshis < 55000
+
+
+def compare_btc_bch_node():
+    uuid = str(random_uuid())
+    node = SporeStack.node(days=1, uuid=uuid, cloudinit='#!/bin/true')
+    node_bch = SporeStack.node(days=1, uuid=uuid, cloudinit='#!/bin/true', currency='bch')
+    assert node.satoshis < node_bch.satoshis
+
+
+@raises(ValueError)
+def test_bad_currency():
+    uuid = str(random_uuid())
+    node = SporeStack.node(days=1, uuid=uuid, cloudinit='#!/bin/true', currency='usd')

@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-VERSION = '0.6.8'
+VERSION = '0.7.0'
 
 DOWNLOAD_URL = 'https://github.com/sporestack/sporestack-python/tarball/{}'
 
@@ -25,8 +25,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'sporestack = sporestack.cli:main',
-            'nodemeup = sporestack.cli:nodemeup'
+            'sporestack = sporestack.cli:main'
         ]
     }
 )
