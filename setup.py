@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-VERSION = '0.7.0'
+VERSION = '0.7.1'
 
 DOWNLOAD_URL = 'https://github.com/sporestack/sporestack-python/tarball/{}'
 
@@ -14,13 +14,12 @@ setup(
     author='Teran McKinney',
     author_email='sega01@go-beyond.org',
     description=DESCRIPTION,
-    keywords=['bitcoin', 'servers', 'infrastructure', 'vps', 'ephemeral'],
+    keywords=['bitcoin', 'bitcoincash', 'servers', 'infrastructure', 'vps', 'ephemeral'],
     license='Unlicense',
     url='https://sporestack.com/',
     download_url=DOWNLOAD_URL.format(VERSION),
     packages=['sporestack'],
     install_requires=[
-        'pyyaml',
         'pyqrcode'
     ],
     entry_points={

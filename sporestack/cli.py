@@ -455,7 +455,8 @@ def topup(args):
         try:
             node = sporestack.node_topup(days=args.days,
                                          uuid=args.uuid,
-                                         paycode=args.paycode)
+                                         paycode=args.paycode,
+                                         currency=args.currency)
         except (ValueError, KeyboardInterrupt):
             raise
         except:
@@ -466,7 +467,7 @@ def topup(args):
             if ran_once is True:
                 continue
             handle_payment(args.uuid, node.address, node.satoshis,
-                           args.wallet_command)
+                           args.wallet_command, args.currency)
             ran_once = True
         else:
             break
