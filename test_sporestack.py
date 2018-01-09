@@ -1,9 +1,15 @@
 from uuid import uuid4 as random_uuid
 
 import sporestack
+import re
 from nose.tools import raises
 
 SporeStack = sporestack.SporeStack()
+
+
+def test_version():
+    version = sporestack.__version__
+    assert bool(re.match(r'^(\d+)\.(\d+)\.(\d+)$', version))
 
 
 def test__sshkey_strip():

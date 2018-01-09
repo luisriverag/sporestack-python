@@ -2,7 +2,14 @@
 
 from setuptools import setup
 
-VERSION = '0.7.1'
+try:
+    with open('sporestack/__init__.py') as f:
+        for line in f:
+            if line.startswith('__version__'):
+                VERSION = line.replace("'", '').split('=')[1].strip()
+                break
+except:
+    print('Version not set.')
 
 DOWNLOAD_URL = 'https://github.com/sporestack/sporestack-python/tarball/{}'
 

@@ -4,7 +4,7 @@ set -e
 
 nosetests-2.7
 
-nosetests-3.5
+nosetests3
 
 python2 sporestack/cli.py 2>&1 | grep arguments
 python3 sporestack/cli.py 2>&1 | grep arguments
