@@ -2,14 +2,14 @@
 
 from setuptools import setup
 
-try:
-    with open('sporestack/__init__.py') as f:
-        for line in f:
-            if line.startswith('__version__'):
-                VERSION = line.replace("'", '').split('=')[1].strip()
-                break
-except:
-    print('Version not set.')
+VERSION = None
+with open('sporestack/__init__.py') as f:
+    for line in f:
+        if line.startswith('__version__'):
+            VERSION = line.replace("'", '').split('=')[1].strip()
+            break
+if VERSION is None:
+        raise ValueError('__version__ not found in __init__.py')
 
 DOWNLOAD_URL = 'https://github.com/sporestack/sporestack-python/tarball/{}'
 
