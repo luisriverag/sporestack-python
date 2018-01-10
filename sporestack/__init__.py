@@ -15,6 +15,8 @@ try:
 except ImportError:
     from urllib2 import urlopen, HTTPError
 
+__version__ = '0.7.1'
+
 DEFAULT_ENDPOINT = 'https://sporestack.com'
 
 TIMEOUT = 60
@@ -96,7 +98,7 @@ class SporeStack():
              dcid=None,
              flavor=None,
              paycode=None,
-             currency='btc'):
+             currency='bch'):
         """
         Returns a node
 
@@ -166,7 +168,7 @@ class SporeStack():
                    days,
                    uuid,
                    paycode=None,
-                   currency='btc'):
+                   currency='bch'):
         """
         Lets you raise the end_of_life on a node.
 

@@ -14,7 +14,7 @@ import warnings
 from socket import gethostbyname
 
 import pyqrcode
-from sporestack import SporeStack
+from sporestack import SporeStack, __version__
 
 DOT_FILE_PATH = '{}/.sporestack'.format(os.getenv('HOME'))
 
@@ -333,7 +333,7 @@ def spawn(uuid,
           ssh_connect=False,
           ssh_user='root',
           wallet_command=None,
-          currency='btc'):
+          currency='bch'):
     """
     Spawn a node.
     """
@@ -533,6 +533,9 @@ def options(args):
 
 def main():
     parser = argparse.ArgumentParser(description='SporeStack.com CLI.')
+    parser.add_argument('--version', action='version',
+                        version='SporeStack {version}'.
+                        format(version=__version__))
     parser.add_argument('--endpoint',
                         help='Use alternate SporeStack endpoint.',
                         default='https://sporestack.com')
@@ -679,7 +682,7 @@ def main():
                                  default=None)
     spawn_subparser.add_argument('--currency',
                                  help='Cryptocurrency to pay with',
-                                 default='btc')
+                                 default='bch')
     help_text = 'Run payment with (command) (address) (satoshis)'
     spawn_subparser.add_argument('--wallet_command',
                                  help=help_text,
@@ -701,7 +704,7 @@ def main():
                                  default=None)
     topup_subparser.add_argument('--currency',
                                  help='Cryptocurrency to pay with',
-                                 default='btc')
+                                 default='bch')
     help_text = 'Run payment with (command) (address) (satoshis)'
     topup_subparser.add_argument('--wallet_command',
                                  help=help_text,
