@@ -15,7 +15,7 @@ try:
 except ImportError:
     from urllib2 import urlopen, HTTPError
 
-__version__ = '0.7.1'
+__version__ = '0.7.2'
 
 DEFAULT_ENDPOINT = 'https://sporestack.com'
 

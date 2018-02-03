@@ -2,7 +2,7 @@
 
 ## Installation
 
-Python 3 is recommended.
+Python 3 is recommended, Python 2 support will be removed entirely.
 
 * `pip3 install sporestack || pip install sporestack`
 
@@ -24,7 +24,7 @@ Spawn a tor relay for 28 days:
 $ sporestack spawn --launch tor_relay
 ```
 
-Spawn and pay with Bitcoin Cash:
+Spawn and pay with Bitcoin Cash (the default):
 
 ```
 $ sporestack spawn --currency bch

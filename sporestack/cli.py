@@ -36,6 +36,25 @@ def stderr(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
+def payment_uri(currency, address, satoshis):
+    """
+    Returns a payment URI from the currency, address, and satoshis.
+    """
+    amount = "{0:.8f}".format(satoshis *
+                              0.00000001)
+    if currency == 'btc':
+        uri = 'bitcoin:{}?amount={}'.format(address, amount)
+    elif currency == 'bch':
+        # Add support for legacy address format and new cashaddr format.
+        if ':' in address:
+            uri = '{}?amount={}'.format(address, amount)
+        else:
+            uri = 'bitcoincash:{}?amount={}'.format(address, amount)
+    else:
+        raise ValueError('Currency must be one of: btc, bch')
+    return uri
+
+
 def ttl(end_of_life):
     """
     Human readable time remaining.
@@ -103,19 +122,10 @@ def handle_payment(uuid, address, satoshis, wallet_command, currency):
         if os.system(full_wallet_command) != 0:
             raise
         return True
-    amount = "{0:.8f}".format(satoshis *
-                              0.00000001)
-    if currency == 'btc':
-        uri = 'bitcoin:{}?amount={}'.format(address, amount)
-    elif currency == 'bch':
-        uri = 'bitcoincash:{}?amount={}'.format(address, amount)
-    else:
-        raise ValueError('Currency must be one of: btc, bch')
+    uri = payment_uri(currency, address, satoshis)
     premessage = '''UUID: {}
-Bitcoin URI: {}
-Pay with Bitcoin *within an hour*. QR code will change every so often but the
-current and previous QR codes are both valid for about an hour. The faster you
-make payment, the better. Pay *exactly* the specified amount. No more, no less.
+Payment URI: {}
+Pay *exactly* the specified amount. No more, no less.
 Resize your terminal and try again if QR code above is not readable.
 Press ctrl+c to abort.'''
     message = premessage.format(uuid, uri)
