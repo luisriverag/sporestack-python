@@ -247,8 +247,7 @@ def ssh(uuid, ssh_user='root', command=None, stdin=None):
     Should support specifying a keyfile, maybe?
     Consider paramiko or Fabric?
     """
-    # Hacky...
-    hostname = uuid + '.node.sporestack.com.'
+    hostname = node_info(uuid, attribute='hostname')
     try:
         gethostbyname(hostname)
     except:
