@@ -50,7 +50,7 @@ def test_node():
     uuid = str(random_uuid())
     node = SporeStack.node(days=1, uuid=uuid, cloudinit='#!/bin/true')
     assert node.satoshis > 10000
-    assert node.satoshis < 55000
+    assert node.satoshis < 100000000
 
 
 def compare_btc_bch_node():

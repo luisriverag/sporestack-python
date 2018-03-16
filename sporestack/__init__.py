@@ -7,20 +7,12 @@ Released into the public domain.
 from collections import namedtuple
 from warnings import warn
 from base64 import b64encode
-import json
 
-# Python 2 backwards compatibility.
-try:
-    from urllib.request import urlopen, HTTPError
-except ImportError:
-    from urllib2 import urlopen, HTTPError
+import requests
 
-__version__ = '0.7.3'
+__version__ = '0.8.0'
 
 DEFAULT_ENDPOINT = 'https://sporestack.com'
-
-TIMEOUT = 60
-OPTIONS_TIMEOUT = 10
 
 
 def _sshkey_strip(sshkey):
@@ -46,8 +38,26 @@ def _b64(data):
         return None
     try:
         return b64encode(bytes(data, 'utf-8')).decode('utf-8')
-    except:
+    except Exception:
         return b64encode(data)
+
+
+def _validate_request(request):
+    """
+    Returns True if 2XX status code,
+    Raises ValueError with body if 4XX,
+    Raises Except with body if something else.
+    """
+    try:
+        request.raise_for_status()
+    except Exception:
+        if str(request.status_code)[0] == '4':
+            raise ValueError(request.content)
+        else:
+            code_and_body = '{}: {}'.format(request.status_code,
+                                            request.content)
+            raise Exception(code_and_body)
+    return True
 
 
 class SporeStack():
@@ -61,12 +71,9 @@ class SporeStack():
         """
         Returns a dict of options for osid, dcid, and flavor.
         """
-        http_return = urlopen(self.endpoint + '/node/options',
-                              timeout=OPTIONS_TIMEOUT)
-        if http_return.getcode() != 200:
-            msg = 'SporeStack /node/options did not return HTTP 200.'
-            raise Exception(msg)
-        return json.loads(http_return.read().decode('utf-8'))
+        request = requests.get(url=self.endpoint + '/node/options')
+        _validate_request(request)
+        return request.json()
 
     def node_get_launch_profile(self, profile):
         """
@@ -74,11 +81,9 @@ class SporeStack():
         https://sporestack.com/launch
         """
         url = '{}/launch/{}.json'.format(self.endpoint, profile)
-        http_return = urlopen(url,
-                              timeout=OPTIONS_TIMEOUT)
-        if http_return.getcode() != 200:
-            raise Exception('{} did not return HTTP 200.'.format(url))
-        return json.loads(http_return.read().decode('utf-8'))
+        request = requests.get(url)
+        _validate_request(request)
+        return request.json()
 
     def node_get_launch_profiles(self):
         """
@@ -115,54 +120,41 @@ class SporeStack():
         if ipxe_chain_url is not None:
             ipxe = True
 
-        pre_data = {'days': days,
-                    'ipxe': ipxe,
-                    'ipxe_chain_url': ipxe_chain_url,
-                    'osid': osid,
-                    'dcid': dcid,
-                    'flavor': flavor,
-                    'paycode': paycode,
-                    'startupscript': startupscript,
-                    'sshkey': _sshkey_strip(sshkey),
-                    'cloudinit': _b64(cloudinit),
-                    'uuid': uuid,
-                    'currency': currency}
+        post_data = {'days': days,
+                     'ipxe': ipxe,
+                     'ipxe_chain_url': ipxe_chain_url,
+                     'osid': osid,
+                     'dcid': dcid,
+                     'flavor': flavor,
+                     'paycode': paycode,
+                     'startupscript': startupscript,
+                     'sshkey': _sshkey_strip(sshkey),
+                     'cloudinit': _b64(cloudinit),
+                     'uuid': uuid,
+                     'currency': currency}
 
-        # Python 3 and 2 compatibility
-        try:
-            post_data = bytes(json.dumps(pre_data), 'utf-8')
-        except:
-            post_data = json.dumps(pre_data)
+        request = requests.post(self.endpoint + '/node',
+                                json=post_data)
 
-        try:
-            http_return = urlopen(self.endpoint + '/node',
-                                  data=post_data,
-                                  timeout=TIMEOUT)
-        except HTTPError as http_error:
-            # Throw exception with output from endpoint..
-            # This needs another name.
-            raise ValueError(http_error.read())
+        _validate_request(request)
 
-        if http_return.getcode() == 200:
-            data = json.loads(http_return.read().decode('utf-8'))
-            if 'deprecated' in data and data['deprecated'] is not False:
-                warn(str(data['deprecated']), DeprecationWarning)
-            # Iffy on this.
-            node = namedtuple('node',
-                              data.keys())
-            node.end_of_life = data['end_of_life']
-            node.payment_status = data['payment_status']
-            node.creation_status = data['creation_status']
-            node.address = data['address']
-            node.satoshis = data['satoshis']
-            node.ip4 = data['ip4']
-            node.ip6 = data['ip6']
-            node.hostname = data['hostname']
-            node.kvm_url = data['kvm_url']
+        data = request.json()
+        if 'deprecated' in data and data['deprecated'] is not False:
+            warn(str(data['deprecated']), DeprecationWarning)
+        # Iffy on this.
+        node = namedtuple('node',
+                          data.keys())
+        node.end_of_life = data['end_of_life']
+        node.payment_status = data['payment_status']
+        node.creation_status = data['creation_status']
+        node.address = data['address']
+        node.satoshis = data['satoshis']
+        node.ip4 = data['ip4']
+        node.ip6 = data['ip6']
+        node.hostname = data['hostname']
+        node.kvm_url = data['kvm_url']
 
-            return node
-        else:
-            raise Exception('Fatal issue with sporestack.')
+        return node
 
     def node_topup(self,
                    days,
@@ -181,38 +173,25 @@ class SporeStack():
         Should pay in 100 seconds or less! Satoshi padding changes.
         """
 
-        pre_data = {'days': days,
-                    'paycode': paycode,
-                    'uuid': uuid,
-                    'currency': currency}
+        post_data = {'days': days,
+                     'paycode': paycode,
+                     'uuid': uuid,
+                     'currency': currency}
 
-        # Python 3 and 2 compatibility
-        try:
-            post_data = bytes(json.dumps(pre_data), 'utf-8')
-        except:
-            post_data = json.dumps(pre_data)
+        request = requests.post(self.endpoint + '/node/topup',
+                                json=post_data)
 
-        try:
-            http_return = urlopen(self.endpoint + '/node/topup',
-                                  data=post_data,
-                                  timeout=TIMEOUT)
-        except HTTPError as http_error:
-            # Throw exception with output from endpoint..
-            # This needs another name.
-            raise ValueError(http_error.read())
+        _validate_request(request)
 
-        if http_return.getcode() == 200:
-            data = json.loads(http_return.read().decode('utf-8'))
-            if 'deprecated' in data and data['deprecated'] is not False:
-                warn(str(data['deprecated']), DeprecationWarning)
-            # Iffy on this.
-            node = namedtuple('node',
-                              data.keys())
-            node.end_of_life = data['end_of_life']
-            node.payment_status = data['payment_status']
-            node.address = data['address']
-            node.satoshis = data['satoshis']
+        data = request.json()
+        if 'deprecated' in data and data['deprecated'] is not False:
+            warn(str(data['deprecated']), DeprecationWarning)
+        # Iffy on this.
+        node = namedtuple('node',
+                          data.keys())
+        node.end_of_life = data['end_of_life']
+        node.payment_status = data['payment_status']
+        node.address = data['address']
+        node.satoshis = data['satoshis']
 
-            return node
-        else:
-            raise Exception('Fatal issue with sporestack.')
+        return node

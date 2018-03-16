@@ -233,7 +233,7 @@ def ssh_wrapper(args):
             try:
                 print(output['stdout'].decode('utf-8'), end='')
                 print(output['stderr'].decode('utf-8'), end='')
-            except:
+            except Exception:
                 print(output['stdout'], end='')
                 print(output['stderr'], end='')
         exit(output['return_code'])
@@ -250,7 +250,7 @@ def ssh(uuid, ssh_user='root', command=None, stdin=None):
     hostname = node_info(uuid, attribute='hostname')
     try:
         gethostbyname(hostname)
-    except:
+    except Exception:
         raise Exception('Hostname not found. Did the server expire?')
     # Python Lists are strange so we are doing this strangely.
     run_command = ['ssh', '-q', '-l', ssh_user, hostname,
@@ -266,7 +266,7 @@ def ssh(uuid, ssh_user='root', command=None, stdin=None):
             if subprocess.call(run_command, stdin=devnull) == 0:
                 break
         stderr('Waiting for node to come online.')
-        sleep(3)
+        sleep(5)
     # Drop true...
     run_command.pop()
     if command is not None:
@@ -287,7 +287,7 @@ def ssh(uuid, ssh_user='root', command=None, stdin=None):
     # Python 2 and 3 compatibility
     try:
         stdin = bytes(stdin, 'utf-8')
-    except:
+    except Exception:
         stdin = stdin
     _stdout, _stderr = process.communicate(stdin)
     return_code = process.wait()
@@ -352,7 +352,7 @@ def spawn(uuid,
             try:
                 with open(sshkey) as ssh_key_file:
                     sshkey = ssh_key_file.read()
-            except:
+            except Exception:
                 pre_message = 'Unable to open {}. Did you run ssh-keygen?'
                 message = pre_message.format(sshkey)
                 stderr(message)
@@ -394,10 +394,11 @@ def spawn(uuid,
                                    ipxe_chain_url=ipxe_chain_url,
                                    paycode=paycode,
                                    currency=currency)
-        except (ValueError, KeyboardInterrupt):
+        except KeyboardInterrupt:
             raise
-        except:
-            sleep(2)
+        except Exception as e:
+            stderr(e)
+            sleep(5)
             stderr('Issue with SporeStack, retrying...')
             continue
         if node.payment_status is False:
@@ -413,7 +414,7 @@ def spawn(uuid,
             stderr('Node being built...')
         if node.creation_status is True:
             break
-        sleep(2)
+        sleep(5)
 
     banner = BANNER.format(node.hostname,
                            node.end_of_life,
@@ -435,7 +436,7 @@ def spawn(uuid,
         try:
             print(ssh(uuid,
                       stdin=postlaunch)['stdout'].decode('utf-8'), end='')
-        except:
+        except Exception:
             print(ssh(uuid,
                       stdin=postlaunch)['stdout'], end='')
         return
@@ -448,7 +449,7 @@ def spawn(uuid,
         return
     else:
         stderr(banner)
-        stderr('Run "sporestack ssh {}" to SSH into node.'.format(uuid))
+        stderr('Run "ssh root@{}" to SSH into node.'.format(node.hostname))
         # Write uuid for stdout.
         print(uuid)
         return
@@ -468,9 +469,10 @@ def topup(args):
                                          currency=args.currency)
         except (ValueError, KeyboardInterrupt):
             raise
-        except:
-            sleep(2)
+        except Exception as e:
+            stderr(e)
             stderr('Issue with SporeStack, retrying...')
+            sleep(5)
             continue
         if node.payment_status is False:
             if ran_once is True:
@@ -480,12 +482,12 @@ def topup(args):
             ran_once = True
         else:
             break
-        sleep(2)
+        sleep(5)
     print('{} topped up.'.format(args.uuid))
     # Load existing node data if available.
     try:
         node_dump = node_info(args.uuid)
-    except:
+    except Exception:
         node_dump = {'uuid': args.uuid}
         if not os.path.isdir(DOT_FILE_PATH):
             os.mkdir(DOT_FILE_PATH, 0o700)

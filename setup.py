@@ -27,7 +27,8 @@ setup(
     download_url=DOWNLOAD_URL.format(VERSION),
     packages=['sporestack'],
     install_requires=[
-        'pyqrcode'
+        'pyqrcode',
+        'requests'
     ],
     entry_points={
         'console_scripts': [
