@@ -10,7 +10,7 @@ from base64 import b64encode
 
 import requests
 
-__version__ = '0.8.0'
+__version__ = '0.8.1'
 
 DEFAULT_ENDPOINT = 'https://sporestack.com'
 

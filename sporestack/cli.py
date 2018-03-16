@@ -394,12 +394,12 @@ def spawn(uuid,
                                    ipxe_chain_url=ipxe_chain_url,
                                    paycode=paycode,
                                    currency=currency)
-        except KeyboardInterrupt:
+        except (ValueError, KeyboardInterrupt):
             raise
         except Exception as e:
             stderr(e)
-            sleep(5)
             stderr('Issue with SporeStack, retrying...')
+            sleep(5)
             continue
         if node.payment_status is False:
             if ran_once is True:
