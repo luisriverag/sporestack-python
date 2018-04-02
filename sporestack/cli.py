@@ -315,7 +315,7 @@ def spawn_wrapper(args):
           flavor=args.flavor,
           ipxe=args.ipxe,
           ipxe_chain_url=args.ipxe_chain_url,
-          paycode=args.paycode,
+          settlement_token=args.settlement_token,
           ssh_connect=args.ssh,
           ssh_user=args.ssh_user,
           wallet_command=args.wallet_command,
@@ -338,7 +338,7 @@ def spawn(uuid,
           cloudinit=None,
           ipxe=False,
           ipxe_chain_url=None,
-          paycode=None,
+          settlement_token=None,
           ssh_connect=False,
           ssh_user='root',
           wallet_command=None,
@@ -392,7 +392,7 @@ def spawn(uuid,
                                    cloudinit=cloudinit,
                                    ipxe=ipxe,
                                    ipxe_chain_url=ipxe_chain_url,
-                                   paycode=paycode,
+                                   settlement_token=settlement_token,
                                    currency=currency)
         except (ValueError, KeyboardInterrupt):
             raise
@@ -461,12 +461,16 @@ def topup(args):
     """
     sporestack = SporeStack(endpoint=args.endpoint)
     ran_once = False
+    days = args.days
+    uuid = args.uuid
+    settlement_token = args.settlement_token
+    currency = args.currency
     while True:
         try:
-            node = sporestack.node_topup(days=args.days,
-                                         uuid=args.uuid,
-                                         paycode=args.paycode,
-                                         currency=args.currency)
+            node = sporestack.node_topup(days=days,
+                                         uuid=uuid,
+                                         settlement_token=settlement_token,
+                                         currency=currency)
         except (ValueError, KeyboardInterrupt):
             raise
         except Exception as e:
@@ -655,8 +659,8 @@ def main():
     spawn_subparser.add_argument('--uuid',
                                  help=argparse.SUPPRESS,
                                  default=str(random_uuid()))
-    spawn_subparser.add_argument('--paycode',
-                                 help=argparse.SUPPRESS,
+    spawn_subparser.add_argument('--settlement_token',
+                                 help='Use with settlement currency.',
                                  default=None)
     default_ssh_key_path = '{}/.ssh/id_rsa.pub'.format(os.getenv('HOME'))
     spawn_subparser.add_argument('--ssh_key',
@@ -710,8 +714,8 @@ def main():
                                  help='Additional days to live: 1-28.',
                                  type=int,
                                  required=True)
-    topup_subparser.add_argument('--paycode',
-                                 help=argparse.SUPPRESS,
+    topup_subparser.add_argument('--settlement_token',
+                                 help='Use with settlement currency.',
                                  default=None)
     topup_subparser.add_argument('--currency',
                                  help='Cryptocurrency to pay with',

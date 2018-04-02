@@ -10,7 +10,7 @@ from base64 import b64encode
 
 import requests
 
-__version__ = '0.8.1'
+__version__ = '0.8.2'
 
 DEFAULT_ENDPOINT = 'https://sporestack.com'
 
@@ -94,6 +94,7 @@ class SporeStack():
     def node(self,
              days,
              uuid,
+             currency='bch',
              sshkey=None,
              cloudinit=None,
              startupscript=None,
@@ -102,8 +103,7 @@ class SporeStack():
              osid=None,
              dcid=None,
              flavor=None,
-             paycode=None,
-             currency='bch'):
+             settlement_token=None):
         """
         Returns a node
 
@@ -126,12 +126,12 @@ class SporeStack():
                      'osid': osid,
                      'dcid': dcid,
                      'flavor': flavor,
-                     'paycode': paycode,
                      'startupscript': startupscript,
                      'sshkey': _sshkey_strip(sshkey),
                      'cloudinit': _b64(cloudinit),
                      'uuid': uuid,
-                     'currency': currency}
+                     'currency': currency,
+                     'settlement_token': settlement_token}
 
         request = requests.post(self.endpoint + '/node',
                                 json=post_data)
@@ -159,8 +159,8 @@ class SporeStack():
     def node_topup(self,
                    days,
                    uuid,
-                   paycode=None,
-                   currency='bch'):
+                   currency='bch',
+                   settlement_token=None):
         """
         Lets you raise the end_of_life on a node.
 
@@ -174,9 +174,9 @@ class SporeStack():
         """
 
         post_data = {'days': days,
-                     'paycode': paycode,
                      'uuid': uuid,
-                     'currency': currency}
+                     'currency': currency,
+                     'settlement_token': settlement_token}
 
         request = requests.post(self.endpoint + '/node/topup',
                                 json=post_data)

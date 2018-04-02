@@ -13,7 +13,7 @@ def test_version():
 
 
 def test__sshkey_strip():
-    assert sporestack._sshkey_strip(None) == None
+    assert sporestack._sshkey_strip(None) is None
     full_sshkey = 'ssh-rsa AAAA foo@foo'
     correct_sshkey = 'ssh-rsa AAAA'
     assert sporestack._sshkey_strip(full_sshkey) == correct_sshkey
@@ -24,7 +24,7 @@ def test__b64():
     """
     Validates base64 function for cloudinit.
     """
-    assert sporestack._b64(None) == None
+    assert sporestack._b64(None) is None
     assert sporestack._b64('SporeStack') == 'U3BvcmVTdGFjaw=='
 
 
@@ -56,11 +56,23 @@ def test_node():
 def compare_btc_bch_node():
     uuid = str(random_uuid())
     node = SporeStack.node(days=1, uuid=uuid, cloudinit='#!/bin/true')
-    node_bch = SporeStack.node(days=1, uuid=uuid, cloudinit='#!/bin/true', currency='bch')
+    node_bch = SporeStack.node(days=1,
+                               uuid=uuid,
+                               cloudinit='#!/bin/true',
+                               currency='bch')
     assert node.satoshis < node_bch.satoshis
 
 
 @raises(ValueError)
 def test_bad_currency():
     uuid = str(random_uuid())
-    node = SporeStack.node(days=1, uuid=uuid, cloudinit='#!/bin/true', currency='usd')
+    SporeStack.node(days=1, uuid=uuid, cloudinit='#!/bin/true', currency='usd')
+
+
+@raises(ValueError)
+def test_settlement_without_token():
+    uuid = str(random_uuid())
+    SporeStack.node(days=1,
+                    uuid=uuid,
+                    cloudinit='#!/bin/true',
+                    currency='settlement')
