@@ -525,7 +525,7 @@ def options(args):
         if options['flavor'][flavor]['deprecated'] is True:
             continue
         help_line = '    {}: RAM: {}, VCPUs: {}, DISK: {}, ' \
-                    'BW PER DAY: {}, CENTS PER DAY: {}\n'
+                    'BW PER DAY: {} GB, CENTS PER DAY: {}\n'
         ram = options['flavor'][flavor]['ram']
         disk = options['flavor'][flavor]['disk']
         vcpus = options['flavor'][flavor]['vcpu_count']
