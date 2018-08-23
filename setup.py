@@ -16,23 +16,29 @@ DOWNLOAD_URL = 'https://github.com/sporestack/sporestack-python/tarball/{}'
 DESCRIPTION = 'SporeStack.com library and client. Launch servers with Bitcoin.'
 
 setup(
+    python_requires='>=3.3',
     name='sporestack',
     version=VERSION,
-    author='Teran McKinney',
-    author_email='sega01@go-beyond.org',
+    author='SporeStack',
+    author_email='admin@sporestack.com',
     description=DESCRIPTION,
     keywords=['bitcoin', 'bitcoincash', 'servers', 'infrastructure', 'vps', 'ephemeral'],
     license='Unlicense',
     url='https://sporestack.com/',
     download_url=DOWNLOAD_URL.format(VERSION),
-    packages=['sporestack'],
+    packages=['sporestack', 'sporestackv2'],
     install_requires=[
         'pyqrcode',
-        'requests'
+        'requests',
+        'aaargh',
+        'walkingliberty',
+        'paramiko',
+        'sshpubkeys'
     ],
     entry_points={
         'console_scripts': [
-            'sporestack = sporestack.cli:main'
+            'sporestack = sporestack.cli:main',
+            'sporestackv2 = sporestackv2.client:main'
         ]
     }
 )
