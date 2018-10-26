@@ -56,12 +56,12 @@ def make_random_machine_id():
 @cli.cmd_arg('--currency', type=str, default=None)
 @cli.cmd_arg('--settlement_token', type=str, default=None)
 @cli.cmd_arg('--cores', type=int, default=1)
-@cli.cmd_arg('--memory', type=int, required=True)
-@cli.cmd_arg('--bandwidth', type=int, required=True)
-@cli.cmd_arg('--ipv4', required=True)
-@cli.cmd_arg('--ipv6', required=True)
-@cli.cmd_arg('--disk', type=int, required=True)
-@cli.cmd_arg('--days', type=int, default=0)
+@cli.cmd_arg('--memory', type=int, default=1)
+@cli.cmd_arg('--bandwidth', type=int, default=1)
+@cli.cmd_arg('--ipv4', default='/32')
+@cli.cmd_arg('--ipv6', default='/128')
+@cli.cmd_arg('--disk', type=int, default=5)
+@cli.cmd_arg('--days', type=int, required=True)
 @cli.cmd_arg('--refund_address', type=str, default=None)
 @cli.cmd_arg('--qemuopts', type=str, default=None)
 @cli.cmd_arg('--walkingliberty_wallet', type=str, default=None)
@@ -184,14 +184,18 @@ def launch(vm_hostname,
 
     if created_dict['created'] is False:
         tries = 0
-        while tries != 10:
+        while tries != 100:
             logging.info('Waiting for server to build...')
             tries = tries + 1
-            # Waiting for payment to set in.
+            # Waiting for server to spin up.
             sleep(10)
             created_dict = create_vm(host)
             if created_dict['created'] is True:
                 break
+
+    if created_dict['created'] is False:
+        # FIXME: Bad exception type.
+        raise ValueError('Server creation failed, tries exceeded.')
 
     if 'host' not in created_dict:
         created_dict['host'] = host
