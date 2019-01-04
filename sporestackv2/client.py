@@ -52,6 +52,7 @@ def make_random_machine_id():
 @cli.cmd_arg('--hostaccess', type=bool, default=False)
 @cli.cmd_arg('--save', type=bool, default=True)
 @cli.cmd_arg('--override_code', type=str, default=None)
+@cli.cmd_arg('--region', type=str, default=None)
 @cli.cmd_arg('--managed', type=bool, default=False)
 @cli.cmd_arg('--currency', type=str, default=None)
 @cli.cmd_arg('--settlement_token', type=str, default=None)
@@ -84,6 +85,7 @@ def launch(vm_hostname,
            refund_address=None,
            cores=1,
            currency='bch',
+           region=None,
            managed=False,
            organization=None,
            override_code=None,
@@ -146,6 +148,7 @@ def launch(vm_hostname,
                       ipv6=ipv6,
                       bandwidth=bandwidth,
                       currency=currency,
+                      region=region,
                       organization=organization,
                       managed=managed,
                       override_code=override_code,
