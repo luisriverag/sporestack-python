@@ -152,3 +152,25 @@ def test_ssh_key():
         validate.ssh_key('')
     with pytest.raises(ValueError):
         validate.ssh_key('ssh-rsa')
+
+
+def test_ipxescript():
+    assert validate.ipxescript(None) is True
+    assert validate.ipxescript('#!ipxe') is True
+    with pytest.raises(TypeError):
+        validate.ipxescript(1)
+    with pytest.raises(TypeError):
+        validate.ipxescript(True)
+    with pytest.raises(ValueError):
+        validate.ipxescript('')
+
+
+def test_region():
+    assert validate.region(None) is True
+    assert validate.region('#!ipxe') is True
+    with pytest.raises(TypeError):
+        validate.region(1)
+    with pytest.raises(TypeError):
+        validate.region(True)
+    with pytest.raises(ValueError):
+        validate.region('')

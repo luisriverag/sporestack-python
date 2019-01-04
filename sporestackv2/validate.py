@@ -293,3 +293,18 @@ def ipxescript(ipxescript):
         if letter not in string.printable:
             raise ValueError('ipxescript must only contain ascii characters.')
     return True
+
+
+def region(region):
+    if region is None:
+        return True
+    if not isinstance(region, str):
+        raise TypeError('region must be a string or null.')
+    if len(region) == 0:
+        raise ValueError('region must be more than zero bytes long.')
+    if len(region) > 200:
+        raise ValueError('region must be less than 200 bytes long.')
+    for letter in region:
+        if letter not in string.printable:
+            raise ValueError('region must only contain ascii characters.')
+    return True

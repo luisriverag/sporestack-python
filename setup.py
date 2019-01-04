@@ -3,7 +3,7 @@
 from setuptools import setup
 
 VERSION = None
-with open('sporestack/__init__.py') as f:
+with open('sporestackv2/__init__.py') as f:
     for line in f:
         if line.startswith('__version__'):
             VERSION = line.replace("'", '').split('=')[1].strip()
