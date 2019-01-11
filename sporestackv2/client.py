@@ -13,6 +13,7 @@ from hashlib import sha256
 from time import sleep
 
 import aaargh
+import pyqrcode
 from walkingliberty import WalkingLiberty
 
 from . import api_client
@@ -43,6 +44,48 @@ def make_random_machine_id():
     random = os.urandom(64)
     machine_id = sha256(random).hexdigest()
     return machine_id
+
+
+def payment_uri(currency, address, satoshis):
+    """
+    Returns a payment URI from the currency, address, and satoshis.
+    """
+    amount = "{0:.8f}".format(satoshis *
+                              0.00000001)
+    if currency == 'btc':
+        uri = 'bitcoin:{}?amount={}'.format(address, amount)
+    elif currency == 'bch':
+        # Add support for legacy address format and new cashaddr format.
+        if ':' in address:
+            uri = '{}?amount={}'.format(address, amount)
+        else:
+            uri = 'bitcoincash:{}?amount={}'.format(address, amount)
+    else:
+        raise ValueError('Currency must be one of: btc, bch')
+    return uri
+
+
+def make_payment(currency, address, satoshis, walkingliberty_wallet=None):
+    if walkingliberty_wallet is not None:
+        walkingliberty = WalkingLiberty(currency)
+        txid = walkingliberty.send(private_key=walkingliberty_wallet,
+                                   address=address,
+                                   satoshis=satoshis)
+        logging.debug('WalkingLiberty txid: {}'.format(txid))
+    else:
+        uri = payment_uri(currency, address, satoshis)
+        premessage = '''Payment URI: {}
+Pay *exactly* the specified amount. No more, no less. Pay within
+one hour at the very most.
+Resize your terminal and try again if QR code above is not readable.
+Press ctrl+c to abort.'''
+        message = premessage.format(uri)
+        qr = pyqrcode.create(uri)
+        print(qr.terminal(module_color='black',
+                          background='white',
+                          quiet_zone=1))
+        print(message)
+        input('[Press enter once you have made payment.]')
 
 
 # FIXME: ordering...
@@ -163,31 +206,30 @@ def launch(vm_hostname,
     if api_endpoint is not None:
         # Adjust host to whatever it gives us.
         host = created_dict['host']
+    # This will be false at least the first time if paying with BTC or BCH.
     if created_dict['paid'] is False:
-        if walkingliberty_wallet is None:
-            return created_dict
-        else:
-            walkingliberty = WalkingLiberty(currency)
-            address = created_dict['payment']['address']
-            satoshis = created_dict['payment']['amount']
-            txid = walkingliberty.send(private_key=walkingliberty_wallet,
-                                       address=address,
-                                       satoshis=satoshis)
-            logging.debug('txid: {}'.format(txid))
-            # Off by one? Meh.
-            tries = 0
-            while tries != 10:
-                logging.info('Waiting for payment to process...')
-                tries = tries + 1
-                # Waiting for payment to set in.
-                sleep(10)
-                created_dict = create_vm(host)
-                if created_dict['paid'] is True:
-                    break
+        address = created_dict['payment']['address']
+        satoshis = created_dict['payment']['amount']
+
+        make_payment(currency=currency,
+                     address=address,
+                     satoshis=satoshis,
+                     walkingliberty_wallet=walkingliberty_wallet)
+
+        tries = 360
+        while tries > 0:
+            tries = tries - 1
+            logging.info('Waiting for payment to process...')
+            # FIXME: Wait one hour in a smarter way.
+            # Waiting for payment to set in.
+            sleep(10)
+            created_dict = create_vm(host)
+            if created_dict['paid'] is True:
+                break
 
     if created_dict['created'] is False:
         tries = 0
-        while tries != 100:
+        while tries != 10:
             logging.info('Waiting for server to build...')
             tries = tries + 1
             # Waiting for server to spin up.
@@ -259,26 +301,26 @@ def topup(vm_hostname,
                                 retry=True)
 
     topped_dict = topup_vm()
+    # This will be false at least the first time if paying with BTC or BCH.
     if topped_dict['paid'] is False:
-        if walkingliberty_wallet is None:
-            return topped_dict
-        else:
-            walkingliberty = WalkingLiberty(currency)
-            address = topped_dict['payment']['address']
-            satoshis = topped_dict['payment']['amount']
-            txid = walkingliberty.send(private_key=walkingliberty_wallet,
-                                       address=address,
-                                       satoshis=satoshis)
-            logging.debug('txid: {}'.format(txid))
-            tries = 0
-            while tries != 10:
-                logging.info('Waiting for payment to process...')
-                tries = tries + 1
-                # Waiting for payment to set in.
-                sleep(10)
-                topped_dict = topup_vm()
-                if topped_dict['paid'] is True:
-                    break
+        address = topped_dict['payment']['address']
+        satoshis = topped_dict['payment']['amount']
+
+        make_payment(currency=currency,
+                     address=address,
+                     satoshis=satoshis,
+                     walkingliberty_wallet=walkingliberty_wallet)
+
+        tries = 360
+        while tries > 0:
+            logging.info('Waiting for payment to process...')
+            tries = tries - 1
+            # FIXME: Wait one hour in a smarter way.
+            # Waiting for payment to set in.
+            sleep(10)
+            topped_dict = topup_vm()
+            if topped_dict['paid'] is True:
+                break
 
     machine_info['expiration'] = topped_dict['expiration']
     save_machine_info(machine_info, overwrite=True)
