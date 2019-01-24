@@ -32,7 +32,7 @@ def i_am_root():
         return False
 
 
-def make_random_machine_id():
+def random_machine_id():
     """
     For now, make a random machine_id.
     This can be completely deterministic
@@ -114,8 +114,10 @@ Press ctrl+c to abort.'''
 @cli.cmd_arg('--organization', type=str, default=None)
 @cli.cmd_arg('--ipxescript', type=str, default=None)
 @cli.cmd_arg('--ipxescript_stdin', type=bool, default=False)
+@cli.cmd_arg('--ipxescript_file', type=str, default=None)
 @cli.cmd_arg('--operating_system', type=str, default=None)
 @cli.cmd_arg('--ssh_key', type=str, default=None)
+@cli.cmd_arg('--ssh_key_file', type=str, default=None)
 def launch(vm_hostname,
            days,
            disk,
@@ -137,15 +139,15 @@ def launch(vm_hostname,
            hostaccess=False,
            ipxescript=None,
            ipxescript_stdin=False,
+           ipxescript_file=None,
            operating_system=None,
            ssh_key=None,
+           ssh_key_file=None,
            walkingliberty_wallet=None,
            want_topup=False,
            save=True):
     """
-    Pass ipxe script via stdin.
-
-    FIXME: want_topup only works when using api_endpoint.
+    Attempts to launch a server.
     """
     ipv4 = api_client.normalize_argument(ipv4)
     ipv6 = api_client.normalize_argument(ipv6)
@@ -153,27 +155,39 @@ def launch(vm_hostname,
     want_topup = api_client.normalize_argument(want_topup)
     ipxescript_stdin = api_client.normalize_argument(ipxescript_stdin)
 
-    if host is None and api_endpoint is None:
-        raise ValueError('host and/or api_endpoint must be set.')
-
     if machine_exists(vm_hostname):
         message = '{} already created.'.format(vm_hostname)
         raise ValueError(message)
+
+    if host is None and api_endpoint is None:
+        raise ValueError('host and/or api_endpoint must be set.')
+
+    if ssh_key is not None and ssh_key_file is not None:
+        raise ValueError('Only ssh_key or ssh_key_file can be set.')
+    if ssh_key_file is not None:
+        with open(ssh_key_file) as fp:
+            ssh_key = fp.read()
+
+    ipxe_not_none_or_false = 0
+    for ipxe_option in [ipxescript, ipxescript_stdin, ipxescript_file]:
+        if ipxe_option not in [False, None]:
+            ipxe_not_none_or_false = ipxe_not_none_or_false + 1
+    msg = 'Only set one of ipxescript, ipxescript_stdin, ipxescript_file'
+    if ipxe_not_none_or_false > 1:
+        raise ValueError(msg)
+    if ipxescript_stdin is True:
+        ipxescript = sys.stdin.read()
+    elif ipxescript_file is not None:
+        with open(ipxescript_file) as fp:
+            ipxescript = fp.read()
+
     # FIXME: Hacky.
     if host == '127.0.0.1':
         if walkingliberty_wallet is None and settlement_token is None:
             if override_code is None:
                 override_code = get_override_code()
 
-    msg = 'ipxescript must be None with ipxescript_stdin set to True'
-    if ipxescript is not None:
-        if ipxescript_stdin is True:
-            raise ValueError(msg)
-
-    if ipxescript_stdin is True:
-        ipxescript = sys.stdin.read()
-
-    machine_id = make_random_machine_id()
+    machine_id = random_machine_id()
 
     def create_vm(host):
         create = api_client.launch

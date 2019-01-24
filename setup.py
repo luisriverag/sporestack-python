@@ -26,7 +26,7 @@ setup(
     license='Unlicense',
     url='https://sporestack.com/',
     download_url=DOWNLOAD_URL.format(VERSION),
-    packages=['sporestack', 'sporestackv2'],
+    packages=['sporestackv2'],
     install_requires=[
         'pyqrcode',
         'requests',
@@ -37,7 +37,6 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'sporestack = sporestack.cli:main',
             'sporestackv2 = sporestackv2.client:main'
         ]
     }
