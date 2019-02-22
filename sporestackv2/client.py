@@ -533,6 +533,19 @@ def bootorder(vm_hostname, bootorder, api_endpoint=None):
                                 api_endpoint=api_endpoint)
 
 
+def api_endpoint_to_host(api_endpoint):
+    """
+    Returns a likely workable host from just the endpoint.
+
+    This would most likely come up if building from a host directly, without
+    any API nodes.
+
+    Input should look like http://foo.bar or https://foo.bar. We just return
+    foo.bar.
+    """
+    return api_endpoint.split('/')[2]
+
+
 @cli.cmd
 @cli.cmd_arg('vm_hostname')
 def serialconsole(vm_hostname):
@@ -541,6 +554,8 @@ def serialconsole(vm_hostname):
     """
     machine_info = get_machine_info(vm_hostname)
     host = machine_info['host']
+    if host is None:
+        host = api_endpoint_to_host(machine_info['api_endpoint'])
     machine_id = machine_info['machine_id']
     return api_client.serialconsole(host, machine_id)
 
