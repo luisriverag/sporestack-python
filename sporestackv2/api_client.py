@@ -136,8 +136,7 @@ def launch(machine_id,
     validate.operating_system(operating_system)
     validate.ssh_key(ssh_key)
 
-    json_params = {'api_version': 1,
-                   'machine_id': machine_id,
+    json_params = {'machine_id': machine_id,
                    'days': days,
                    'disk': disk,
                    'memory': memory,
@@ -184,8 +183,7 @@ def topup(machine_id,
           retry=False):
     validate.machine_id(machine_id)
 
-    json_params = {'api_version': 1,
-                   'machine_id': machine_id,
+    json_params = {'machine_id': machine_id,
                    'days': days,
                    'refund_address': refund_address,
                    'settlement_token': settlement_token,
