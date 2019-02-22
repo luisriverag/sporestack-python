@@ -226,18 +226,6 @@ def bandwidth(bandwidth):
         raise TypeError('bandwidth must be integer.')
 
 
-def api_version(api_version):
-    if isinstance(api_version, int):
-        if api_version == 1:
-            return True
-        elif api_version == 2:
-            return True
-        else:
-            raise ValueError('Invalid api_version.')
-    else:
-        raise TypeError('api_version must be integer.')
-
-
 def _ip(ip, ip_type, cidr):
     """
     Helper for ipv4 and ipv6

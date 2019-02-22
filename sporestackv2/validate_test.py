@@ -78,15 +78,6 @@ def test_bandwidth():
         validate.bandwidth(1.0)
 
 
-def test_api_version():
-    assert validate.api_version(1) is True
-    assert validate.api_version(2) is True
-    with pytest.raises(ValueError):
-        validate.api_version(3)
-    with pytest.raises(TypeError):
-        validate.api_version('1')
-
-
 def test_further_ipv4_ipv6():
     assert validate.further_ipv4_ipv6('tor', 'tor') is True
     assert validate.further_ipv4_ipv6('tor', False) is True
