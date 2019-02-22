@@ -230,6 +230,8 @@ def api_version(api_version):
     if isinstance(api_version, int):
         if api_version == 1:
             return True
+        elif api_version == 2:
+            return True
         else:
             raise ValueError('Invalid api_version.')
     else:

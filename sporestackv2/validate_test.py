@@ -80,8 +80,9 @@ def test_bandwidth():
 
 def test_api_version():
     assert validate.api_version(1) is True
+    assert validate.api_version(2) is True
     with pytest.raises(ValueError):
-        validate.api_version(2)
+        validate.api_version(3)
     with pytest.raises(TypeError):
         validate.api_version('1')
 
