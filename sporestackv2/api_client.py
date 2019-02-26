@@ -16,10 +16,19 @@ LATEST_API_VERSION = 2
 
 
 def api_request(url, json_params=None, get_params=None, retry=False):
-    if json_params is None:
-        request = requests.get(url, params=get_params)
-    else:
-        request = requests.post(url, json=json_params, timeout=90)
+    try:
+        if json_params is None:
+            request = requests.get(url, params=get_params, timeout=330)
+        else:
+            request = requests.post(url, json=json_params, timeout=330)
+    except Exception as e:
+        if retry is True:
+            logging.warning('Got an error, but retrying: {}'.format(e))
+            sleep(5)
+            # Try again.
+            return api_request(url, json_params, retry=retry)
+        else:
+            raise
 
     status_code_first_digit = request.status_code // 100
     if status_code_first_digit == 2:

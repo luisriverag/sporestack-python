@@ -447,6 +447,8 @@ def info(vm_hostname, api_endpoint=None):
     machine_info = get_machine_info(vm_hostname)
     host = machine_info['host']
     machine_id = machine_info['machine_id']
+    if api_endpoint is None:
+        api_endpoint = machine_info['api_endpoint']
     return api_client.info(host=host,
                            machine_id=machine_id,
                            api_endpoint=api_endpoint)
@@ -462,6 +464,8 @@ def status(vm_hostname, api_endpoint=None):
     machine_info = get_machine_info(vm_hostname)
     host = machine_info['host']
     machine_id = machine_info['machine_id']
+    if api_endpoint is None:
+        api_endpoint = machine_info['api_endpoint']
     return api_client.status(host=host,
                              machine_id=machine_id,
                              api_endpoint=api_endpoint)
@@ -477,6 +481,8 @@ def start(vm_hostname, api_endpoint=None):
     machine_info = get_machine_info(vm_hostname)
     host = machine_info['host']
     machine_id = machine_info['machine_id']
+    if api_endpoint is None:
+        api_endpoint = machine_info['api_endpoint']
     return api_client.start(host=host,
                             machine_id=machine_id,
                             api_endpoint=api_endpoint)
@@ -492,6 +498,8 @@ def stop(vm_hostname, api_endpoint=None):
     machine_info = get_machine_info(vm_hostname)
     host = machine_info['host']
     machine_id = machine_info['machine_id']
+    if api_endpoint is None:
+        api_endpoint = machine_info['api_endpoint']
     return api_client.stop(host=host,
                            machine_id=machine_id,
                            api_endpoint=api_endpoint)
@@ -513,6 +521,8 @@ def ipxescript(vm_hostname, ipxescript=None, api_endpoint=None):
             ipxescript = sys.stdin.read()
         else:
             raise ValueError('ipxescript must be set.')
+    if api_endpoint is None:
+        api_endpoint = machine_info['api_endpoint']
     return api_client.ipxescript(host=host,
                                  machine_id=machine_id,
                                  ipxescript=ipxescript,
@@ -527,6 +537,8 @@ def bootorder(vm_hostname, bootorder, api_endpoint=None):
     machine_info = get_machine_info(vm_hostname)
     host = machine_info['host']
     machine_id = machine_info['machine_id']
+    if api_endpoint is None:
+        api_endpoint = machine_info['api_endpoint']
     return api_client.bootorder(host=host,
                                 machine_id=machine_id,
                                 bootorder=bootorder,
