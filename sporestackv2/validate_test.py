@@ -52,8 +52,12 @@ def test_memory():
 
 def test_disk():
     assert validate.disk(10) is True
-    with pytest.raises(ValueError):
-        validate.disk(0)
+    assert validate.disk(1) is True
+    assert validate.disk(0) is True
+    with pytest.raises(TypeError):
+        validate.disk(-10)
+    with pytest.raises(TypeError):
+        validate.disk('10')
 
 
 def test_unsigned_int():
@@ -80,12 +84,17 @@ def test_bandwidth():
 
 def test_further_ipv4_ipv6():
     assert validate.further_ipv4_ipv6('tor', 'tor') is True
-    assert validate.further_ipv4_ipv6('tor', False) is True
-    assert validate.further_ipv4_ipv6(False, 'tor') is True
+    assert validate.further_ipv4_ipv6('nat', 'nat') is True
     with pytest.raises(ValueError):
-        validate.further_ipv4_ipv6('tor', 1)
+        validate.further_ipv4_ipv6('tor', 'nat')
     with pytest.raises(ValueError):
-        validate.further_ipv4_ipv6('nat', 'tor')
+        validate.further_ipv4_ipv6(False, 'nat')
+    with pytest.raises(ValueError):
+        validate.further_ipv4_ipv6('tor', False)
+    with pytest.raises(ValueError):
+        validate.further_ipv4_ipv6('tor', '/128')
+    with pytest.raises(ValueError):
+        validate.further_ipv4_ipv6('/32', 'tor')
 
 
 def test_organization():

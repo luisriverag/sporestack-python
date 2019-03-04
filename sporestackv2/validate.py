@@ -120,12 +120,11 @@ def unsigned_int(variable):
 def disk(disk):
     """
     Makes sure disk is valid.
-    May add 0 support in the future for no disk.
+
+    0 is valid, means no disk.
     """
     if not unsigned_int(disk):
-        raise TypeError('disk must be an integer type.')
-    if disk == 0:
-        raise ValueError('0 not acceptable for disk')
+        raise TypeError('disk must be an unsigned integer.')
     return True
 
 
@@ -259,14 +258,16 @@ def ipv6(ipv6):
 # argument cominations.
 
 def further_ipv4_ipv6(ipv4, ipv6):
-    ipv4_exception = 'ipv4 must be False or "tor" with ipv6 set to "tor"'
-    ipv6_exception = 'ipv6 must be False or "tor" with ipv4 set to "tor"'
-    if ipv4 == 'tor':
-        if ipv6 not in [False, 'tor']:
-            raise ValueError(ipv6_exception)
-    if ipv6 == 'tor':
-        if ipv4 not in [False, 'tor']:
-            raise ValueError(ipv4_exception)
+    """
+    More validation with the combination of ipv4 and ipv6 options.
+
+    We don't support mixed nat/tor modes, so this handles that.
+    """
+    message = 'ipv4 and ipv6 must be the same if either is tor or nat.'
+
+    if ipv4 in ['tor', 'nat'] or ipv6 in ['tor', 'nat']:
+        if ipv4 != ipv6:
+            raise ValueError(message)
     return True
 
 
