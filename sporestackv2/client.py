@@ -242,8 +242,8 @@ def launch(vm_hostname,
                 break
 
     if created_dict['created'] is False:
-        tries = 0
-        while tries != 10:
+        tries = 360
+        while tries > 0:
             logging.info('Waiting for server to build...')
             tries = tries + 1
             # Waiting for server to spin up.
@@ -253,6 +253,7 @@ def launch(vm_hostname,
                 break
 
     if created_dict['created'] is False:
+        logging.warning(created_dict)
         # FIXME: Bad exception type.
         raise ValueError('Server creation failed, tries exceeded.')
 
@@ -517,6 +518,7 @@ def ipxescript(vm_hostname, ipxescript=None, api_endpoint=None):
     host = machine_info['host']
     machine_id = machine_info['machine_id']
     if ipxescript is None:
+        # FIXME: This is broken. Somehow, __name__ is sporestackv2.client here.
         if __name__ == '__main__':
             ipxescript = sys.stdin.read()
         else:
@@ -562,7 +564,7 @@ def api_endpoint_to_host(api_endpoint):
 @cli.cmd_arg('vm_hostname')
 def serialconsole(vm_hostname):
     """
-    ctrl + \ to quit.
+    ctrl + backslash to quit.
     """
     machine_info = get_machine_info(vm_hostname)
     host = machine_info['host']
