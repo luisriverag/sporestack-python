@@ -22,7 +22,7 @@ setup(
     author='SporeStack',
     author_email='admin@sporestack.com',
     description=DESCRIPTION,
-    keywords=['bitcoin', 'bitcoincash', 'servers', 'infrastructure', 'vps', 'ephemeral'],
+    keywords=['bitcoin', 'bitcoincash', 'bitcoinsv', 'servers', 'infrastructure', 'vps', 'ephemeral'],
     license='Unlicense',
     url='https://sporestack.com/',
     download_url=DOWNLOAD_URL.format(VERSION),

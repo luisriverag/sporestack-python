@@ -22,7 +22,11 @@ cli = aaargh.App()
 
 logging.basicConfig(level=logging.INFO)
 
-API_ENDPOINT = 'https://api.sporestack.com'
+CLEARNET_ENDPOINT = 'https://api.sporestack.com'
+TOR_ENDPOINT = 'http://spore64'\
+               'i5sofqlfz5gq2ju4msgzojjwifls7rok2cti624zyq3fcelad.onion'
+
+API_ENDPOINT = CLEARNET_ENDPOINT
 
 
 def i_am_root():
@@ -55,13 +59,12 @@ def payment_uri(currency, address, satoshis):
     if currency == 'btc':
         uri = 'bitcoin:{}?amount={}'.format(address, amount)
     elif currency == 'bch':
-        # Add support for legacy address format and new cashaddr format.
-        if ':' in address:
-            uri = '{}?amount={}'.format(address, amount)
-        else:
-            uri = 'bitcoincash:{}?amount={}'.format(address, amount)
+        uri = '{}?amount={}'.format(address, amount)
+    elif currency == 'bsv':
+        uri = 'bitcoin:{}?amount={}'.format(address, amount)
     else:
-        raise ValueError('Currency must be one of: btc, bch')
+        raise ValueError('This is a bug.')
+
     return uri
 
 

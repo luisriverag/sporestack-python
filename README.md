@@ -1,8 +1,12 @@
-# Python 3 library for http://sporestack.com/
+# Python 3 library and CLI for https://sporestack.com/ / http://spore64i5sofqlfz5gq2ju4msgzojjwifls7rok2cti624zyq3fcelad.onion
 
 ## Installation
 
 * `pip3 install sporestack || pip install sporestack`
+
+## Screenshot
+
+![sporestackv2 CLI screenshot](https://sporestack.com/static/sporestackv2-screenshot.png)
 
 ## Usage
 

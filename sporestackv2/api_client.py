@@ -26,7 +26,10 @@ def api_request(url, json_params=None, get_params=None, retry=False):
             logging.warning('Got an error, but retrying: {}'.format(e))
             sleep(5)
             # Try again.
-            return api_request(url, json_params, retry=retry)
+            return api_request(url,
+                               json_params=json_params,
+                               get_params=get_params,
+                               retry=retry)
         else:
             raise
 
@@ -48,7 +51,10 @@ def api_request(url, json_params=None, get_params=None, retry=False):
             logging.warning('Got a 500, retrying in 5 seconds...')
             sleep(5)
             # Try again if we get a 500
-            return api_request(url, json_params, retry=retry)
+            return api_request(url,
+                               json_params=json_params,
+                               get_params=get_params,
+                               retry=retry)
         else:
             raise Exception(request.content)
     else:
@@ -133,6 +139,7 @@ def launch(machine_id,
     ipv6 = normalize_argument(ipv6)
     bandwidth = normalize_argument(bandwidth)
 
+    validate.currency(currency)
     validate.ipv4(ipv4)
     validate.ipv6(ipv6)
     validate.bandwidth(bandwidth)
@@ -191,6 +198,7 @@ def topup(machine_id,
           host=None,
           retry=False):
     validate.machine_id(machine_id)
+    validate.currency(currency)
 
     json_params = {'machine_id': machine_id,
                    'days': days,
@@ -359,7 +367,7 @@ def host_info(host, api_endpoint=None):
 @cli.cmd_arg('machine_id')
 def serialconsole(host, machine_id):
     """
-    ctrl + \ to quit.
+    ctrl + backslash to quit.
     """
     validate.machine_id(machine_id)
 
