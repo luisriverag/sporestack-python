@@ -124,12 +124,30 @@ def test_organization():
 
 def test_operating_system():
     assert validate.operating_system('debian-9') is True
+    assert validate.operating_system('debian-10') is True
     assert validate.operating_system('ubuntu-16-04') is True
+    assert validate.operating_system('something-else') is True
     assert validate.operating_system(None) is True
-    with pytest.raises(ValueError):
-        validate.operating_system('windows')
+
+    # Shortest valid.
+    assert validate.operating_system('a') is True
+    # Longest valid
+    valid = validate.operating_system(string.ascii_lowercase[:16])
+    assert valid is True
+
     with pytest.raises(TypeError):
         validate.operating_system(1)
+    with pytest.raises(TypeError):
+        validate.operating_system(0)
+    # Too short.
+    with pytest.raises(ValueError):
+        validate.operating_system('')
+    # One too long.
+    with pytest.raises(ValueError):
+        validate.operating_system(string.ascii_lowercase[:17])
+    # Bad character.
+    with pytest.raises(ValueError):
+        validate.operating_system('_')
 
 
 valid_ssh_key = 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDLuFASoTgo5r/bBGcawcN'\
@@ -175,3 +193,44 @@ def test_region():
         validate.region(True)
     with pytest.raises(ValueError):
         validate.region('')
+
+
+# Currently unused.
+def test_must_have_exact_keys():
+    assert validate.must_have_exact_keys({'foo': None, 'bar': None},
+                                         ['foo', 'bar']) is True
+    assert validate.must_have_exact_keys({'foo': None, 'bar': None},
+                                         ['bar', 'foo']) is True
+    with pytest.raises(ValueError):
+        validate.must_have_exact_keys({'foo': None, 'bar': None},
+                                      ['foo'])
+    with pytest.raises(ValueError):
+        validate.must_have_exact_keys({'foo': None, 'bar': None},
+                                      ['foo', 'bar', 'car'])
+
+
+def test_affiliate():
+    bch_address = 'bitcoincash:qq9gh20y2vur63tpe0xa5dh90zwzsuxagyhp7pfuv3'
+    btc_address = '1xm4vFerV3pSgvBFkyzLgT1Ew3HQYrS1V'
+    valid_affiliate = {'currencies': {'btc': btc_address,
+                                      'bch': bch_address,
+                                      'bsv': btc_address},
+                       'launch_cents': 500,
+                       'per_day_cents': 50}
+    assert validate.affiliate(valid_affiliate) is True
+    assert validate.affiliate(None) is True
+    with pytest.raises(TypeError):
+        validate.affiliate('a')
+    with pytest.raises(TypeError):
+        validate.affiliate(0)
+    with pytest.raises(ValueError):
+        validate.affiliate({})
+    invalid_affiliate = valid_affiliate.copy()
+    invalid_affiliate['extra_key'] = True
+    with pytest.raises(ValueError):
+        validate.affiliate(invalid_affiliate)
+    invalid_affiliate = valid_affiliate.copy()
+    invalid_affiliate['currencies']['dash'] = btc_address
+    with pytest.raises(ValueError):
+        validate.affiliate(invalid_affiliate)
+#

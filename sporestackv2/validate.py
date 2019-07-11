@@ -29,21 +29,18 @@ def operating_system(operating_system):
     """
     Validates an operating_system argument.
     """
-    # FIXME, should be elsewhere?
-    acceptable_operating_systems = ['fedora-28',
-                                    'debian-9',
-                                    'centos-7',
-                                    'ubuntu-16-04',
-                                    'ubuntu-18-04',
-                                    'coreos-stable']
     if operating_system is None:
         return True
     if not isinstance(operating_system, str):
         raise TypeError('operating_system must be null or a string.')
-    if operating_system not in acceptable_operating_systems:
-        os_list = acceptable_operating_systems
-        msg = 'operating_system must be one of {}'.format(os_list)
-        raise ValueError(msg)
+    if len(operating_system) < 1:
+        raise ValueError('operating_system must have at least one letter.')
+    if len(operating_system) > 16:
+        raise ValueError('operating_system must have 16 letters or less.')
+    for character in operating_system:
+        if character not in string.ascii_lowercase + string.digits + "-":
+            msg = 'operating_system must only contain a-z, digits, -'
+            raise ValueError(msg)
 
     return True
 
@@ -299,3 +296,45 @@ def region(region):
         if letter not in string.printable:
             raise ValueError('region must only contain ascii characters.')
     return True
+
+
+# Currently unused.
+def address(currency, address):
+    # This is incomplete and unused. FIXME
+    return True
+
+
+def must_have_exact_keys(dictionary, list_of_keys):
+    if not isinstance(dictionary, dict):
+        raise TypeError('dictionary must be dict')
+    has_items = []
+    for item in list_of_keys:
+        if item not in dictionary:
+            raise ValueError('{} missing.'.format(item))
+        else:
+            has_items.append(item)
+
+    if len(list_of_keys) != len(dictionary):
+        raise ValueError('Extraneous keys')
+
+    return True
+
+
+def affiliate(affiliate):
+    our_keys = ['currencies', 'per_day_cents', 'launch_cents']
+    our_currency_keys = ['btc', 'bch', 'bsv']
+    if affiliate is None:
+        return True
+    if not isinstance(affiliate, dict):
+        raise TypeError('affiliate must be dict or None')
+    must_have_exact_keys(affiliate, our_keys)
+    if not isinstance(affiliate["currencies"], dict):
+        raise ValueError('affiliate["currencies"] must be dict')
+    must_have_exact_keys(affiliate["currencies"], our_currency_keys)
+    for our_currency in our_currency_keys:
+        currency(our_currency)
+        address(our_currency, affiliate["currencies"][our_currency])
+    unsigned_int(affiliate["per_day_cents"])
+    unsigned_int(affiliate["launch_cents"])
+    return True
+#

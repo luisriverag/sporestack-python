@@ -5,7 +5,7 @@ from .paramiko_interactive import interactive_shell
 def ssh(hostname, command, stdin=None, interactive=False, port=1060):
     """
     FIXME: This won't fail out on non-zero exit statuses.
-    FIXME: Consider different key poliy?
+    FIXME: Consider different key policy?
     """
     if not isinstance(hostname, str):
         raise TypeError('hostname must be string')
