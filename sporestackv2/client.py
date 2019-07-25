@@ -39,9 +39,9 @@ def i_am_root():
 
 def random_machine_id():
     """
-    For now, make a random machine_id.
-    This can be completely deterministic
-    if we please. But, this is easier for now.
+    Makes a random Machine ID.
+
+    These can also be deterministic, but then it wouldn't be called "random".
     """
     # We could also use secrets.token_hex(32),
     # this may be more secure.
@@ -49,24 +49,6 @@ def random_machine_id():
     random = os.urandom(64)
     machine_id = sha256(random).hexdigest()
     return machine_id
-
-
-def payment_uri(currency, address, satoshis):
-    """
-    Returns a payment URI from the currency, address, and satoshis.
-    """
-    amount = "{0:.8f}".format(satoshis *
-                              0.00000001)
-    if currency == 'btc':
-        uri = 'bitcoin:{}?amount={}'.format(address, amount)
-    elif currency == 'bch':
-        uri = '{}?amount={}'.format(address, amount)
-    elif currency == 'bsv':
-        uri = 'bitcoin:{}?amount={}'.format(address, amount)
-    else:
-        raise ValueError('This is a bug.')
-
-    return uri
 
 
 def make_payment(currency,
@@ -82,7 +64,9 @@ def make_payment(currency,
                                    satoshis=satoshis)
         logging.debug('WalkingLiberty txid: {}'.format(txid))
     else:
+        # This is legacy as of 2019-07-25
         if uri is None:
+            logging.debug('uri is None.')
             uri = utilities.payment_to_uri(address=address,
                                            currency=currency,
                                            amount=satoshis)
@@ -98,7 +82,7 @@ Press ctrl+c to abort.'''
                           quiet_zone=1))
         print(message)
         if usd is not None:
-            print('Approximate price in USD: '.format(usd))
+            print('Approximate price in USD: {}'.format(usd))
         input('[Press enter once you have made payment.]')
 
 
@@ -239,12 +223,12 @@ def launch(vm_hostname,
         address = created_dict['payment']['address']
         satoshis = created_dict['payment']['amount']
 
-        if 'uri' in created_dict:
+        if 'uri' in created_dict['payment']:
             uri = created_dict['payment']['uri']
         else:
             uri = None
 
-        if 'usd' in created_dict:
+        if 'usd' in created_dict['payment']:
             usd = created_dict['payment']['usd']
         else:
             usd = None
@@ -348,12 +332,12 @@ def topup(vm_hostname,
         address = topped_dict['payment']['address']
         satoshis = topped_dict['payment']['amount']
 
-        if 'uri' in topped_dict:
+        if 'uri' in topped_dict['payment']:
             uri = topped_dict['payment']['uri']
         else:
             uri = None
 
-        if 'usd' in topped_dict:
+        if 'usd' in topped_dict['payment']:
             usd = topped_dict['payment']['usd']
         else:
             usd = None

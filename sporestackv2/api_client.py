@@ -86,18 +86,18 @@ def get_url(api_endpoint, host, target):
 # FIXME: ordering
 @cli.cmd
 @cli.cmd_arg('machine_id')
+@cli.cmd_arg('--days', type=int)
+@cli.cmd_arg('--disk', type=int)
+@cli.cmd_arg('--memory', type=int)
+@cli.cmd_arg('--ipv4')
+@cli.cmd_arg('--ipv6')
+@cli.cmd_arg('--bandwidth', type=int)
 @cli.cmd_arg('--hostaccess', type=bool, default=False)
 @cli.cmd_arg('--override_code', type=str, default=None)
 @cli.cmd_arg('--organization', type=str, default=None)
 @cli.cmd_arg('--managed', type=bool, default=False)
 @cli.cmd_arg('--currency', type=str)
 @cli.cmd_arg('--cores', type=int, default=1)
-@cli.cmd_arg('--memory', type=int)
-@cli.cmd_arg('--disk', type=int)
-@cli.cmd_arg('--days', type=int)
-@cli.cmd_arg('--bandwidth', type=int)
-@cli.cmd_arg('--ipv4')
-@cli.cmd_arg('--ipv6')
 @cli.cmd_arg('--region', type=str, default=None)
 @cli.cmd_arg('--settlement_token', type=str, default=None)
 @cli.cmd_arg('--refund_address', type=str, default=None)
@@ -355,8 +355,6 @@ def bootorder(host, machine_id, bootorder, api_endpoint=None):
 def host_info(host, api_endpoint=None):
     """
     Returns info about the host.
-
-    FIXME: Returns json for now, should return a dict?
     """
     url = get_url(api_endpoint=api_endpoint, host=host, target='host_info')
     return api_request(url)

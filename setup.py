@@ -9,11 +9,13 @@ with open('sporestackv2/__init__.py') as f:
             VERSION = line.replace("'", '').split('=')[1].strip()
             break
 if VERSION is None:
-        raise ValueError('__version__ not found in __init__.py')
+    raise ValueError('__version__ not found in __init__.py')
 
 DOWNLOAD_URL = 'https://github.com/sporestack/sporestack-python/tarball/{}'
 
 DESCRIPTION = 'SporeStack.com library and client. Launch servers with Bitcoin.'
+KEYWORDS = ['bitcoin', 'bitcoincash', 'bitcoinsv', 'servers', 'infrastructure',
+            'vps', 'virtual private server']
 
 setup(
     python_requires='>=3.3',
@@ -22,7 +24,7 @@ setup(
     author='SporeStack',
     author_email='admin@sporestack.com',
     description=DESCRIPTION,
-    keywords=['bitcoin', 'bitcoincash', 'bitcoinsv', 'servers', 'infrastructure', 'vps', 'ephemeral'],
+    keywords=KEYWORDS,
     license='Unlicense',
     url='https://sporestack.com/',
     download_url=DOWNLOAD_URL.format(VERSION),
