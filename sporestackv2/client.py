@@ -17,6 +17,7 @@ import pyqrcode
 from walkingliberty import WalkingLiberty
 
 from . import api_client
+from . import utilities
 
 cli = aaargh.App()
 
@@ -68,7 +69,12 @@ def payment_uri(currency, address, satoshis):
     return uri
 
 
-def make_payment(currency, address, satoshis, walkingliberty_wallet=None):
+def make_payment(currency,
+                 address,
+                 satoshis,
+                 uri=None,
+                 usd=None,
+                 walkingliberty_wallet=None):
     if walkingliberty_wallet is not None:
         walkingliberty = WalkingLiberty(currency)
         txid = walkingliberty.send(private_key=walkingliberty_wallet,
@@ -76,7 +82,10 @@ def make_payment(currency, address, satoshis, walkingliberty_wallet=None):
                                    satoshis=satoshis)
         logging.debug('WalkingLiberty txid: {}'.format(txid))
     else:
-        uri = payment_uri(currency, address, satoshis)
+        if uri is None:
+            uri = utilities.payment_to_uri(address=address,
+                                           currency=currency,
+                                           amount=satoshis)
         premessage = '''Payment URI: {}
 Pay *exactly* the specified amount. No more, no less. Pay within
 one hour at the very most.
@@ -88,6 +97,8 @@ Press ctrl+c to abort.'''
                           background='white',
                           quiet_zone=1))
         print(message)
+        if usd is not None:
+            print('Approximate price in USD: '.format(usd))
         input('[Press enter once you have made payment.]')
 
 
@@ -228,9 +239,21 @@ def launch(vm_hostname,
         address = created_dict['payment']['address']
         satoshis = created_dict['payment']['amount']
 
+        if 'uri' in created_dict:
+            uri = created_dict['payment']['uri']
+        else:
+            uri = None
+
+        if 'usd' in created_dict:
+            usd = created_dict['payment']['usd']
+        else:
+            usd = None
+
         make_payment(currency=currency,
                      address=address,
                      satoshis=satoshis,
+                     uri=uri,
+                     usd=usd,
                      walkingliberty_wallet=walkingliberty_wallet)
 
         tries = 360
@@ -319,14 +342,27 @@ def topup(vm_hostname,
                                 retry=True)
 
     topped_dict = topup_vm()
-    # This will be false at least the first time if paying with BTC or BCH.
+    # This will be false at least the first time if paying with anything
+    # but settlement.
     if topped_dict['paid'] is False:
         address = topped_dict['payment']['address']
         satoshis = topped_dict['payment']['amount']
 
+        if 'uri' in topped_dict:
+            uri = topped_dict['payment']['uri']
+        else:
+            uri = None
+
+        if 'usd' in topped_dict:
+            usd = topped_dict['payment']['usd']
+        else:
+            usd = None
+
         make_payment(currency=currency,
                      address=address,
                      satoshis=satoshis,
+                     uri=uri,
+                     usd=usd,
                      walkingliberty_wallet=walkingliberty_wallet)
 
         tries = 360
