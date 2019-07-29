@@ -44,7 +44,10 @@ def api_request(url, json_params=None, get_params=None, retry=False):
         except Exception:
             return request.content
     elif status_code_first_digit == 4:
-        raise ValueError(request.content)
+        if request.status_code == 415:
+            raise NotImplementedError(request.content)
+        else:
+            raise ValueError(request.content)
     elif status_code_first_digit == 5:
         if retry is True:
             logging.warning(request.content)

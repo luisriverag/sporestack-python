@@ -17,7 +17,6 @@ import pyqrcode
 from walkingliberty import WalkingLiberty
 
 from . import api_client
-from . import utilities
 
 cli = aaargh.App()
 
@@ -54,7 +53,7 @@ def random_machine_id():
 def make_payment(currency,
                  address,
                  satoshis,
-                 uri=None,
+                 uri,
                  usd=None,
                  walkingliberty_wallet=None):
     if walkingliberty_wallet is not None:
@@ -64,12 +63,6 @@ def make_payment(currency,
                                    satoshis=satoshis)
         logging.debug('WalkingLiberty txid: {}'.format(txid))
     else:
-        # This is legacy as of 2019-07-25
-        if uri is None:
-            logging.debug('uri is None.')
-            uri = utilities.payment_to_uri(address=address,
-                                           currency=currency,
-                                           amount=satoshis)
         premessage = '''Payment URI: {}
 Pay *exactly* the specified amount. No more, no less. Pay within
 one hour at the very most.
@@ -223,10 +216,7 @@ def launch(vm_hostname,
         address = created_dict['payment']['address']
         satoshis = created_dict['payment']['amount']
 
-        if 'uri' in created_dict['payment']:
-            uri = created_dict['payment']['uri']
-        else:
-            uri = None
+        uri = created_dict['payment']['uri']
 
         if 'usd' in created_dict['payment']:
             usd = created_dict['payment']['usd']
@@ -332,10 +322,7 @@ def topup(vm_hostname,
         address = topped_dict['payment']['address']
         satoshis = topped_dict['payment']['amount']
 
-        if 'uri' in topped_dict['payment']:
-            uri = topped_dict['payment']['uri']
-        else:
-            uri = None
+        uri = topped_dict['payment']['uri']
 
         if 'usd' in topped_dict['payment']:
             usd = topped_dict['payment']['usd']
