@@ -9,8 +9,8 @@ import sys
 # FUTURE PYTHON 3.6: import secrets
 import os
 import logging
+import time
 from hashlib import sha256
-from time import sleep
 
 import aaargh
 import pyqrcode
@@ -236,7 +236,7 @@ def launch(vm_hostname,
             logging.info('Waiting for payment to process...')
             # FIXME: Wait one hour in a smarter way.
             # Waiting for payment to set in.
-            sleep(10)
+            time.sleep(10)
             created_dict = create_vm(host)
             if created_dict['paid'] is True:
                 break
@@ -247,7 +247,7 @@ def launch(vm_hostname,
             logging.info('Waiting for server to build...')
             tries = tries + 1
             # Waiting for server to spin up.
-            sleep(10)
+            time.sleep(10)
             created_dict = create_vm(host)
             if created_dict['created'] is True:
                 break
@@ -263,6 +263,7 @@ def launch(vm_hostname,
     created_dict['machine_id'] = machine_id
     created_dict['api_endpoint'] = api_endpoint
     save_machine_info(created_dict)
+    print(pretty_machine_info(created_dict), file=sys.stderr)
     return created_dict
 
 
@@ -342,7 +343,7 @@ def topup(vm_hostname,
             tries = tries - 1
             # FIXME: Wait one hour in a smarter way.
             # Waiting for payment to set in.
-            sleep(10)
+            time.sleep(10)
             topped_dict = topup_vm()
             if topped_dict['paid'] is True:
                 break
@@ -393,6 +394,66 @@ def get_machine_info(vm_hostname):
     if machine_info['vm_hostname'] != vm_hostname:
         raise ValueError('vm_hostname does not match filename.')
     return machine_info
+
+
+def pretty_machine_info(info):
+    msg = 'Hostname: {}\n'.format(info['vm_hostname'])
+    msg += 'Machine ID (keep this secret!): {}\n'.format(info['machine_id'])
+    if info['network_interfaces'][0] == {}:
+        msg += 'SSH hostname: {}\n'.format(info['sshhostname'])
+    else:
+        if 'ipv6' in info['network_interfaces'][0]:
+            msg += 'IPv6: {}\n'.format(info['network_interfaces'][0]['ipv6'])
+        if 'ipv4' in info['network_interfaces'][0]:
+            msg += 'IPv4: {}\n'.format(info['network_interfaces'][0]['ipv4'])
+    expiration = info["expiration"]
+    human_expiration = time.strftime('%Y-%m-%d %H:%M:%S %z',
+                                     time.localtime(expiration))
+    msg += 'Expiration: {} ({})\n'.format(expiration, human_expiration)
+    time_to_live = expiration - int(time.time())
+    if time_to_live > 0:
+        hours = time_to_live // 3600
+        msg += 'Server will be deleted in {} hours.'.format(hours)
+    else:
+        hours = time_to_live * -1 // 3600
+        msg += 'Server deleted {} hours ago.'.format(hours)
+    return msg
+
+
+@cli.cmd
+def list():
+    """
+    List all locally known servers.
+    """
+    directory = machine_info_directory()
+    infos = []
+    for vm_hostname_json in os.listdir(directory):
+        vm_hostname = vm_hostname_json.split('.')[0]
+        infos.append(get_machine_info(vm_hostname))
+
+    for info in infos:
+        print()
+        print(pretty_machine_info(info))
+
+    print()
+    return None
+
+
+def remove(vm_hostname):
+    """
+    Removes a server's .json file.
+    """
+    os.remove(machine_info_directory() + "/" + vm_hostname + ".json")
+
+
+@cli.cmd(name='remove')
+@cli.cmd_arg('vm_hostname')
+def remove_cli(vm_hostname):
+    info = get_machine_info(vm_hostname)
+    print(info)
+    print(pretty_machine_info(info))
+    remove(vm_hostname)
+    print('{} removed.'.format(vm_hostname))
 
 
 def machine_exists(vm_hostname):
@@ -519,6 +580,25 @@ def stop(vm_hostname, api_endpoint=None):
 @cli.cmd
 @cli.cmd_arg('vm_hostname')
 @cli.cmd_arg('--api_endpoint', type=str, default=None)
+def delete(vm_hostname, api_endpoint=None):
+    """
+    Deletes the VM (most likely prematurely.
+    """
+    machine_info = get_machine_info(vm_hostname)
+    host = machine_info['host']
+    machine_id = machine_info['machine_id']
+    if api_endpoint is None:
+        api_endpoint = machine_info['api_endpoint']
+    api_client.delete(host=host,
+                      machine_id=machine_id,
+                      api_endpoint=api_endpoint)
+    # Also remove the .json file
+    remove(vm_hostname)
+
+
+@cli.cmd
+@cli.cmd_arg('vm_hostname')
+@cli.cmd_arg('--api_endpoint', type=str, default=None)
 def ipxescript(vm_hostname, ipxescript=None, api_endpoint=None):
     """
     Trying to make this both useful as a CLI tool and
@@ -590,6 +670,8 @@ def main():
         exit(0)
     elif output is False:
         exit(1)
+    elif output is None:
+        exit(0)
     else:
         print(output)
 

@@ -1,4 +1,4 @@
-# Python 3 library and CLI for https://sporestack.com/ / http://spore64i5sofqlfz5gq2ju4msgzojjwifls7rok2cti624zyq3fcelad.onion
+# Python 3 library and CLI for [SporeStack](https://sporestack.com) [.onion](http://spore64i5sofqlfz5gq2ju4msgzojjwifls7rok2cti624zyq3fcelad.onion)
 
 ## Installation
 
@@ -10,7 +10,14 @@
 
 ## Usage
 
-See: https://sporestack.com
+* `sporestackv2 launch SomeHostname --days 7 --ssh_key_file ~/.ssh/id_rsa.pub --operating_system debian-9 --currency btc`
+* `sporestackv2 topup SomeHostname --days 3 --currency bsv`
+* `sporestackv2 stop SomeHostname`
+* `sporestackv2 start SomeHostname`
+* `sporestackv2 list`
+* `sporestackv2 remove SomeHostname # If expired`
+
+More examples on the [website](https://sporestack.com).
 
 # Notes
 

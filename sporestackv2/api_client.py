@@ -81,6 +81,9 @@ def normalize_argument(argument):
 
 
 def get_url(api_endpoint, host, target):
+    """
+    Has nothing to do with GET requests.
+    """
     if api_endpoint is None:
         api_endpoint = 'http://{}'.format(host)
     return '{}/v{}/{}'.format(api_endpoint, LATEST_API_VERSION, target)
@@ -273,6 +276,22 @@ def stop(host, machine_id, api_endpoint=None):
     validate.machine_id(machine_id)
 
     url = get_url(api_endpoint=api_endpoint, host=host, target='stop')
+    json_params = {'machine_id': machine_id, 'host': host}
+    api_request(url, json_params=json_params)
+    return True
+
+
+@cli.cmd
+@cli.cmd_arg('host')
+@cli.cmd_arg('machine_id')
+@cli.cmd_arg('--api_endpoint', type=str, default=None)
+def delete(host, machine_id, api_endpoint=None):
+    """
+    Immediately deletes the VM.
+    """
+    validate.machine_id(machine_id)
+
+    url = get_url(api_endpoint=api_endpoint, host=host, target='delete')
     json_params = {'machine_id': machine_id, 'host': host}
     api_request(url, json_params=json_params)
     return True
