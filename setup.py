@@ -2,8 +2,10 @@
 
 from setuptools import setup
 
+# Not sure how necessary this is. Would be nice to just
+# import .sporestackv2.__version__
 VERSION = None
-with open('sporestackv2/__init__.py') as f:
+with open('sporestackv2/version.py') as f:
     for line in f:
         if line.startswith('__version__'):
             VERSION = line.replace("'", '').split('=')[1].strip()
@@ -32,6 +34,7 @@ setup(
     install_requires=[
         'pyqrcode',
         'requests',
+        'requests[socks]',
         'aaargh',
         'walkingliberty',
         'paramiko',

@@ -21,7 +21,8 @@ More examples on the [website](https://sporestack.com).
 
 # Notes
 
-You can use --walkingliberty_wallet if you don't want to pay by QR codes all the time.
+ * You can use --walkingliberty_wallet if you don't want to pay by QR codes all the time.
+ * As of 1.0.7, will try to use a local Tor proxy if connecting to a .onion URL. (127.0.0.1:9050) (However, this does not apply to `serialconsole` for the time being.)
 
 # Deprecation notice
 

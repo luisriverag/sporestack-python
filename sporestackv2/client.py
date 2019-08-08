@@ -17,6 +17,7 @@ import pyqrcode
 from walkingliberty import WalkingLiberty
 
 from . import api_client
+from .version import __version__
 
 cli = aaargh.App()
 
@@ -608,11 +609,9 @@ def ipxescript(vm_hostname, ipxescript=None, api_endpoint=None):
     host = machine_info['host']
     machine_id = machine_info['machine_id']
     if ipxescript is None:
-        # FIXME: This is broken. Somehow, __name__ is sporestackv2.client here.
-        if __name__ == '__main__':
-            ipxescript = sys.stdin.read()
-        else:
-            raise ValueError('ipxescript must be set.')
+        # Not the safest for library use but this is generally just a CLI.
+        # __name__ is not __main__ here, which is weird and tricky.
+        ipxescript = sys.stdin.read()
     if api_endpoint is None:
         api_endpoint = machine_info['api_endpoint']
     return api_client.ipxescript(host=host,
@@ -662,6 +661,14 @@ def serialconsole(vm_hostname):
         host = api_endpoint_to_host(machine_info['api_endpoint'])
     machine_id = machine_info['machine_id']
     return api_client.serialconsole(host, machine_id)
+
+
+@cli.cmd
+def version():
+    """
+    Returns the installed version.
+    """
+    return __version__
 
 
 def main():

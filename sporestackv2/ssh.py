@@ -6,6 +6,8 @@ def ssh(hostname, command, stdin=None, interactive=False, port=1060):
     """
     FIXME: This won't fail out on non-zero exit statuses.
     FIXME: Consider different key policy?
+    FIXME: Should add support for Tor proxying.
+    https://github.com/paramiko/paramiko/issues/1490
     """
     if not isinstance(hostname, str):
         raise TypeError('hostname must be string')

@@ -14,13 +14,73 @@ cli = aaargh.App()
 
 LATEST_API_VERSION = 2
 
+GET_TIMEOUT = 60
+POST_TIMEOUT = 90
+USE_TOR_PROXY = 'auto'
+TOR_PROXY = 'socks5h://127.0.0.1:9050'
+# For requests module
+TOR_PROXY_REQUESTS = {'http': TOR_PROXY, 'https': TOR_PROXY}
 
-def api_request(url, json_params=None, get_params=None, retry=False):
+
+def validate_use_tor_proxy(use_tor_proxy):
+    if isinstance(use_tor_proxy, bool):
+        return True
+    if isinstance(use_tor_proxy, str):
+        if use_tor_proxy == 'auto':
+            return True
+
+    raise ValueError('use_tor_proxy must be True, False, or "auto"')
+
+
+def is_onion_url(url):
+    """
+    returns True/False depending on if a URL looks like a Tor hidden service
+    (.onion) or not.
+    This is designed to false as non-onion just to be on the safe-ish side,
+    depending on your view point. It requires URLs like: http://domain.tld/,
+    not http://domain.tld or domain.tld/.
+
+    This can be optimized a lot.
+    """
+    try:
+        url_parts = url.split('/')
+        domain = url_parts[2]
+        tld = domain.split('.')[-1]
+        if tld == 'onion':
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def api_request(url,
+                json_params=None,
+                get_params=None,
+                retry=False,
+                use_tor_proxy=USE_TOR_PROXY):
+    validate_use_tor_proxy(use_tor_proxy)
+
+    proxies = {}
+    if use_tor_proxy is True:
+        proxies = TOR_PROXY_REQUESTS
+    elif use_tor_proxy == 'auto':
+        if is_onion_url(url) is True:
+            msg = 'use_tor_proxy is "auto" and we have a .onion url, '
+            msg += 'using local Tor SOCKS proxy.'
+            logging.debug(msg)
+            proxies = TOR_PROXY_REQUESTS
+
     try:
         if json_params is None:
-            request = requests.get(url, params=get_params, timeout=330)
+            request = requests.get(url,
+                                   params=get_params,
+                                   timeout=GET_TIMEOUT,
+                                   proxies=proxies)
         else:
-            request = requests.post(url, json=json_params, timeout=330)
+            request = requests.post(url,
+                                    json=json_params,
+                                    timeout=POST_TIMEOUT,
+                                    proxies=proxies)
     except Exception as e:
         if retry is True:
             logging.warning('Got an error, but retrying: {}'.format(e))
