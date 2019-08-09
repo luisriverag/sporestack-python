@@ -89,7 +89,8 @@ def api_request(url,
             return api_request(url,
                                json_params=json_params,
                                get_params=get_params,
-                               retry=retry)
+                               retry=retry,
+                               use_tor_proxy=use_tor_proxy)
         else:
             raise
 
@@ -107,6 +108,7 @@ def api_request(url,
         if request.status_code == 415:
             raise NotImplementedError(request.content)
         else:
+            logging.debug('Status code: {}'.format(request.status_code))
             raise ValueError(request.content)
     elif status_code_first_digit == 5:
         if retry is True:
@@ -117,7 +119,8 @@ def api_request(url,
             return api_request(url,
                                json_params=json_params,
                                get_params=get_params,
-                               retry=retry)
+                               retry=retry,
+                               use_tor_proxy=use_tor_proxy)
         else:
             raise Exception(request.content)
     else:
