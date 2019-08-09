@@ -33,7 +33,6 @@ setup(
     packages=['sporestackv2'],
     install_requires=[
         'pyqrcode',
-        'requests',
         'requests[socks]',
         'aaargh',
         'walkingliberty',
