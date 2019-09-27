@@ -25,16 +25,18 @@ def payment_to_uri(address, currency, amount):
     if len(address) == 0:
         raise ValueError('address cannot be 0 length.')
 
-    amount = "{0:.8f}".format(amount *
-                              0.00000001)
+    btc_decimal_amount = "{0:.8f}".format(amount * 0.00000001)
     if currency == 'btc':
-        uri = 'bitcoin:{}?amount={}'.format(address, amount)
+        uri = 'bitcoin:{}?amount={}'.format(address, btc_decimal_amount)
     elif currency == 'bch':
         # This does not support "legacy" base58 addresses for Bitcoin Cash.
-        uri = '{}?amount={}'.format(address, amount)
+        uri = '{}?amount={}'.format(address, btc_decimal_amount)
     elif currency == 'bsv':
         # This does not support "legacy" cashaddr addresses for Bitcoin SV.
-        uri = 'bitcoin:{}?amount={}'.format(address, amount)
+        uri = 'bitcoin:{}?amount={}'.format(address, btc_decimal_amount)
+    elif currency == 'xmr':
+        xmr_decimal_amount = "{0:.12f}".format(amount * 0.000000000001)
+        uri = 'monero:{}?tx_amount={}'.format(address, xmr_decimal_amount)
     else:
         raise ValueError('Currency must be one of: btc, bch, bsv')
 

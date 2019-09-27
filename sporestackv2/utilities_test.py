@@ -30,6 +30,19 @@ def test_payment_to_uri():
                                       amount=amount)
     expected = address + "?amount=0.01000001"
     assert output == expected
+
+    address = "85rBW1Afx7TSteLwk4xfXcH57v7JzgsnRMi1cJugQatXTNB1gqbf"
+    address += "vcP47iPXXU1yqgJofrShLzKnBYBmMCTSSw2h1iaQs8h"
+    currency = "xmr"
+    amount = 1000001
+    output = utilities.payment_to_uri(address=address,
+                                      currency=currency,
+                                      amount=amount)
+    # piconeros are smaller than Satoshis.
+    expected = "monero:" + address + "?tx_amount=0.000001000001"
+    assert output == expected
+
+    # Negative tests.
     with pytest.raises(ValueError):
         utilities.payment_to_uri(address=address,
                                  currency="xxx",
