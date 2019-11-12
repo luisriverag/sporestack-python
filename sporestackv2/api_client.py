@@ -2,12 +2,12 @@
 
 import logging
 import sys
+import os
 from time import sleep
 
 import aaargh
 import requests
 
-from . import ssh
 from . import validate
 
 cli = aaargh.App()
@@ -450,13 +450,19 @@ def host_info(host, api_endpoint=None):
 @cli.cmd_arg('machine_id')
 def serialconsole(host, machine_id):
     """
-    ctrl + backslash to quit.
+    This needs to be adjusted to use a Tor socks proxy of the host is a .onion.
     """
     validate.machine_id(machine_id)
 
-    command = 'serialconsole {}'.format(machine_id)
-    ssh.ssh(host, command, interactive=True)
-    return True
+    command = '/usr/bin/ssh'
+    arguments = []
+    arguments.append(command)
+    arguments.append('-t')
+    arguments.append('vmmanagement@{}'.format(host))
+    arguments.append('-p')
+    arguments.append('1060')
+    arguments.append('serialconsole {}'.format(machine_id))
+    os.execv(command, arguments)
 
 
 if __name__ == '__main__':

@@ -36,7 +36,6 @@ setup(
         'requests[socks]>=2.22.0',
         'aaargh',
         'walkingliberty',
-        'paramiko',
         'sshpubkeys'
     ],
     entry_points={
