@@ -298,43 +298,10 @@ def region(region):
     return True
 
 
-# Currently unused.
-def address(currency, address):
-    # This is incomplete and unused. FIXME
-    return True
-
-
-def must_have_exact_keys(dictionary, list_of_keys):
-    if not isinstance(dictionary, dict):
-        raise TypeError('dictionary must be dict')
-    has_items = []
-    for item in list_of_keys:
-        if item not in dictionary:
-            raise ValueError('{} missing.'.format(item))
-        else:
-            has_items.append(item)
-
-    if len(list_of_keys) != len(dictionary):
-        raise ValueError('Extraneous keys')
-
-    return True
-
-
-def affiliate(affiliate):
-    our_keys = ['currencies', 'per_day_cents', 'launch_cents']
-    our_currency_keys = ['btc', 'bch', 'bsv']
-    if affiliate is None:
+def affiliate_amount(amount):
+    if amount is None:
         return True
-    if not isinstance(affiliate, dict):
-        raise TypeError('affiliate must be dict or None')
-    must_have_exact_keys(affiliate, our_keys)
-    if not isinstance(affiliate["currencies"], dict):
-        raise ValueError('affiliate["currencies"] must be dict')
-    must_have_exact_keys(affiliate["currencies"], our_currency_keys)
-    for our_currency in our_currency_keys:
-        currency(our_currency)
-        address(our_currency, affiliate["currencies"][our_currency])
-    unsigned_int(affiliate["per_day_cents"])
-    unsigned_int(affiliate["launch_cents"])
-    return True
-#
+    if unsigned_int(amount) is True:
+        if amount != 0:
+            return True
+    raise TypeError('affiliate_amount must be null or non-zero unsigned int.')

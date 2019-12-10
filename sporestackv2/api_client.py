@@ -177,6 +177,8 @@ def get_url(api_endpoint, host, target):
 @cli.cmd_arg('--operating_system', type=str, default=None)
 @cli.cmd_arg('--ssh_key', type=str, default=None)
 @cli.cmd_arg('--want_topup', type=bool, default=False)
+@cli.cmd_arg('--affiliate_amount', type=int, default=None)
+@cli.cmd_arg('--affiliate_token', type=str, default=None)
 def launch(machine_id,
            days,
            disk,
@@ -200,7 +202,9 @@ def launch(machine_id,
            api_endpoint=None,
            host=None,
            want_topup=False,
-           retry=False):
+           retry=False,
+           affiliate_amount=None,
+           affiliate_token=None):
     """
     Only ipxescript or operating_system + ssh_key can be None.
     """
@@ -220,6 +224,7 @@ def launch(machine_id,
     validate.ipxescript(ipxescript)
     validate.operating_system(operating_system)
     validate.ssh_key(ssh_key)
+    validate.affiliate_amount(affiliate_amount)
 
     json_params = {'machine_id': machine_id,
                    'days': days,
@@ -242,7 +247,9 @@ def launch(machine_id,
                    'operating_system': operating_system,
                    'ssh_key': ssh_key,
                    'want_topup': want_topup,
-                   'host': host}
+                   'host': host,
+                   'affiliate_amount': affiliate_amount,
+                   'affiliate_token': affiliate_token}
 
     url = get_url(api_endpoint=api_endpoint, host=host, target='launch')
     return api_request(url=url, json_params=json_params, retry=retry)
@@ -257,6 +264,8 @@ def launch(machine_id,
 @cli.cmd_arg('--refund_address', type=str, default=None)
 @cli.cmd_arg('--api_endpoint', type=str, default=None)
 @cli.cmd_arg('--host', type=str, default=None)
+@cli.cmd_arg('--affiliate_amount', type=int, default=None)
+@cli.cmd_arg('--affiliate_token', type=str, default=None)
 def topup(machine_id,
           days,
           currency,
@@ -265,9 +274,12 @@ def topup(machine_id,
           override_code=None,
           api_endpoint=None,
           host=None,
-          retry=False):
+          retry=False,
+          affiliate_amount=None,
+          affiliate_token=None):
     validate.machine_id(machine_id)
     validate.currency(currency)
+    validate.affiliate_amount(affiliate_amount)
 
     json_params = {'machine_id': machine_id,
                    'days': days,
@@ -275,7 +287,9 @@ def topup(machine_id,
                    'settlement_token': settlement_token,
                    'currency': currency,
                    'host': host,
-                   'override_code': override_code}
+                   'override_code': override_code,
+                   'affiliate_amount': affiliate_amount,
+                   'affiliate_token': affiliate_token}
     url = get_url(api_endpoint=api_endpoint, host=host, target='topup')
     return api_request(url=url, json_params=json_params, retry=retry)
 

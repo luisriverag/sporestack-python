@@ -195,42 +195,13 @@ def test_region():
         validate.region('')
 
 
-# Currently unused.
-def test_must_have_exact_keys():
-    assert validate.must_have_exact_keys({'foo': None, 'bar': None},
-                                         ['foo', 'bar']) is True
-    assert validate.must_have_exact_keys({'foo': None, 'bar': None},
-                                         ['bar', 'foo']) is True
-    with pytest.raises(ValueError):
-        validate.must_have_exact_keys({'foo': None, 'bar': None},
-                                      ['foo'])
-    with pytest.raises(ValueError):
-        validate.must_have_exact_keys({'foo': None, 'bar': None},
-                                      ['foo', 'bar', 'car'])
-
-
-def test_affiliate():
-    bch_address = 'bitcoincash:qq9gh20y2vur63tpe0xa5dh90zwzsuxagyhp7pfuv3'
-    btc_address = '1xm4vFerV3pSgvBFkyzLgT1Ew3HQYrS1V'
-    valid_affiliate = {'currencies': {'btc': btc_address,
-                                      'bch': bch_address,
-                                      'bsv': btc_address},
-                       'launch_cents': 500,
-                       'per_day_cents': 50}
-    assert validate.affiliate(valid_affiliate) is True
-    assert validate.affiliate(None) is True
+def test_affiliate_amount():
+    assert validate.affiliate_amount(None) is True
+    assert validate.affiliate_amount(1) is True
+    assert validate.affiliate_amount(1000) is True
     with pytest.raises(TypeError):
-        validate.affiliate('a')
+        validate.affiliate_amount(0)
     with pytest.raises(TypeError):
-        validate.affiliate(0)
-    with pytest.raises(ValueError):
-        validate.affiliate({})
-    invalid_affiliate = valid_affiliate.copy()
-    invalid_affiliate['extra_key'] = True
-    with pytest.raises(ValueError):
-        validate.affiliate(invalid_affiliate)
-    invalid_affiliate = valid_affiliate.copy()
-    invalid_affiliate['currencies']['dash'] = btc_address
-    with pytest.raises(ValueError):
-        validate.affiliate(invalid_affiliate)
-#
+        validate.affiliate_amount(-1)
+    with pytest.raises(TypeError):
+        validate.affiliate_amount("string")

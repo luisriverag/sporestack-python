@@ -110,6 +110,8 @@ Press ctrl+c to abort.'''
 @cli.cmd_arg('--operating_system', type=str, default=None)
 @cli.cmd_arg('--ssh_key', type=str, default=None)
 @cli.cmd_arg('--ssh_key_file', type=str, default=None)
+@cli.cmd_arg('--affiliate_amount', type=int, default=None)
+@cli.cmd_arg('--affiliate_token', type=str, default=None)
 def launch(vm_hostname,
            days,
            disk,
@@ -137,7 +139,9 @@ def launch(vm_hostname,
            ssh_key_file=None,
            walkingliberty_wallet=None,
            want_topup=False,
-           save=True):
+           save=True,
+           affiliate_amount=None,
+           affiliate_token=None):
     """
     Attempts to launch a server.
     """
@@ -206,6 +210,8 @@ def launch(vm_hostname,
                       hostaccess=hostaccess,
                       api_endpoint=api_endpoint,
                       want_topup=want_topup,
+                      affiliate_amount=affiliate_amount,
+                      affiliate_token=affiliate_token,
                       retry=True)
 
     created_dict = create_vm(host)
@@ -277,6 +283,8 @@ def launch(vm_hostname,
 @cli.cmd_arg('--refund_address', type=str, default=None)
 @cli.cmd_arg('--walkingliberty_wallet', type=str, default=None)
 @cli.cmd_arg('--api_endpoint', type=str, default=None)
+@cli.cmd_arg('--affiliate_amount', type=int, default=None)
+@cli.cmd_arg('--affiliate_token', type=str, default=None)
 def topup(vm_hostname,
           days,
           currency,
@@ -284,7 +292,9 @@ def topup(vm_hostname,
           override_code=None,
           settlement_token=None,
           walkingliberty_wallet=None,
-          api_endpoint=None):
+          api_endpoint=None,
+          affiliate_amount=None,
+          affiliate_token=None):
     """
     tops up an existing vm.
     """
@@ -315,6 +325,8 @@ def topup(vm_hostname,
                                 override_code=override_code,
                                 api_endpoint=api_endpoint,
                                 settlement_token=settlement_token,
+                                affiliate_amount=affiliate_amount,
+                                affiliate_token=affiliate_token,
                                 retry=True)
 
     topped_dict = topup_vm()
