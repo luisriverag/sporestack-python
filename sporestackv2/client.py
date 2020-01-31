@@ -215,6 +215,7 @@ def launch(vm_hostname,
                       retry=True)
 
     created_dict = create_vm(host)
+    logging.debug(created_dict)
     if api_endpoint is not None:
         # Adjust host to whatever it gives us.
         host = created_dict['host']
@@ -245,6 +246,7 @@ def launch(vm_hostname,
             # Waiting for payment to set in.
             time.sleep(10)
             created_dict = create_vm(host)
+            logging.debug(created_dict)
             if created_dict['paid'] is True:
                 break
 
@@ -256,6 +258,7 @@ def launch(vm_hostname,
             # Waiting for server to spin up.
             time.sleep(10)
             created_dict = create_vm(host)
+            logging.debug(created_dict)
             if created_dict['created'] is True:
                 break
 

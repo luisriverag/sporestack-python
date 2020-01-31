@@ -106,13 +106,13 @@ def api_request(url,
             return request.content
     elif status_code_first_digit == 4:
         if request.status_code == 415:
-            raise NotImplementedError(request.content)
+            raise NotImplementedError(request.content.decode('utf-8'))
         else:
             logging.debug('Status code: {}'.format(request.status_code))
-            raise ValueError(request.content)
+            raise ValueError(request.content.decode('utf-8'))
     elif status_code_first_digit == 5:
         if retry is True:
-            logging.warning(request.content)
+            logging.warning(request.content.decode('utf-8'))
             logging.warning('Got a 500, retrying in 5 seconds...')
             sleep(5)
             # Try again if we get a 500
@@ -122,7 +122,7 @@ def api_request(url,
                                retry=retry,
                                use_tor_proxy=use_tor_proxy)
         else:
-            raise Exception(request.content)
+            raise Exception(str(request.content))
     else:
         # Not sure why we'd get this.
         request.raise_for_status()
