@@ -511,23 +511,6 @@ def get_override_code():
 @cli.cmd
 @cli.cmd_arg('vm_hostname')
 @cli.cmd_arg('--api_endpoint', type=str, default=None)
-def exists(vm_hostname, api_endpoint=None):
-    """
-    Checks if the VM still exists.
-    """
-    machine_info = get_machine_info(vm_hostname)
-    host = machine_info['host']
-    machine_id = machine_info['machine_id']
-    if api_endpoint is None:
-        api_endpoint = machine_info['api_endpoint']
-    return api_client.exists(host=host,
-                             machine_id=machine_id,
-                             api_endpoint=api_endpoint)
-
-
-@cli.cmd
-@cli.cmd_arg('vm_hostname')
-@cli.cmd_arg('--api_endpoint', type=str, default=None)
 def info(vm_hostname, api_endpoint=None):
     """
     Info on the VM
@@ -540,23 +523,6 @@ def info(vm_hostname, api_endpoint=None):
     return api_client.info(host=host,
                            machine_id=machine_id,
                            api_endpoint=api_endpoint)
-
-
-@cli.cmd
-@cli.cmd_arg('vm_hostname')
-@cli.cmd_arg('--api_endpoint', type=str, default=None)
-def status(vm_hostname, api_endpoint=None):
-    """
-    Checks if the VM is started or stopped.
-    """
-    machine_info = get_machine_info(vm_hostname)
-    host = machine_info['host']
-    machine_id = machine_info['machine_id']
-    if api_endpoint is None:
-        api_endpoint = machine_info['api_endpoint']
-    return api_client.status(host=host,
-                             machine_id=machine_id,
-                             api_endpoint=api_endpoint)
 
 
 @cli.cmd

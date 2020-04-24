@@ -295,38 +295,6 @@ def topup(machine_id,
 
 
 @cli.cmd
-@cli.cmd_arg('machine_id')
-@cli.cmd_arg('--api_endpoint', type=str, default=None)
-@cli.cmd_arg('--host', type=str, default=None)
-def exists(machine_id, api_endpoint=None, host=None):
-    """
-    Checks if the VM exists.
-    """
-    validate.machine_id(machine_id)
-
-    url = get_url(api_endpoint=api_endpoint, host=host, target='exists')
-    get_params = {'machine_id': machine_id, 'host': host}
-    output = api_request(url, get_params=get_params)
-    return output['result']
-
-
-@cli.cmd
-@cli.cmd_arg('host')
-@cli.cmd_arg('machine_id')
-@cli.cmd_arg('--api_endpoint', type=str, default=None)
-def status(host, machine_id, api_endpoint=None):
-    """
-    Checks if the VM is started or stopped.
-    """
-    validate.machine_id(machine_id)
-
-    url = get_url(api_endpoint=api_endpoint, host=host, target='status')
-    get_params = {'machine_id': machine_id, 'host': host}
-    output = api_request(url, get_params=get_params)
-    return output['result']
-
-
-@cli.cmd
 @cli.cmd_arg('host')
 @cli.cmd_arg('machine_id')
 @cli.cmd_arg('--api_endpoint', type=str, default=None)
