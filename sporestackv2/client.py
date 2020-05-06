@@ -427,12 +427,8 @@ def pretty_machine_info(info):
         msg += "Running: {}\n".format(info["running"])
     msg += "Expiration: {} ({})\n".format(expiration, human_expiration)
     time_to_live = expiration - int(time.time())
-    if time_to_live > 0:
-        hours = time_to_live // 3600
-        msg += "Server will be deleted in {} hours.".format(hours)
-    else:
-        hours = time_to_live * -1 // 3600
-        msg += "Server deleted {} hours ago.".format(hours)
+    hours = time_to_live // 3600
+    msg += "Server will be deleted in {} hours.".format(hours)
     return msg
 
 
@@ -446,14 +442,24 @@ def list():
     for vm_hostname_json in os.listdir(directory):
         vm_hostname = vm_hostname_json.split(".")[0]
         saved_vm_info = get_machine_info(vm_hostname)
-        upstream_vm_info = api_client.info(
-            host=saved_vm_info["host"],
-            machine_id=saved_vm_info["machine_id"],
-            api_endpoint=saved_vm_info["api_endpoint"],
-        )
-        saved_vm_info["expiration"] = upstream_vm_info["expiration"]
-        saved_vm_info["running"] = upstream_vm_info["running"]
-        infos.append(saved_vm_info)
+        try:
+            upstream_vm_info = api_client.info(
+                host=saved_vm_info["host"],
+                machine_id=saved_vm_info["machine_id"],
+                api_endpoint=saved_vm_info["api_endpoint"],
+            )
+            saved_vm_info["expiration"] = upstream_vm_info["expiration"]
+            saved_vm_info["running"] = upstream_vm_info["running"]
+            infos.append(saved_vm_info)
+        except ValueError as e:
+            expiration = saved_vm_info["expiration"]
+            human_expiration = time.strftime(
+                "%Y-%m-%d %H:%M:%S %z", time.localtime(expiration)
+            )
+            msg = vm_hostname
+            msg += " expired ({} {}): ".format(expiration, human_expiration)
+            msg += str(e)
+            print(msg)
 
     for info in infos:
         print()
