@@ -16,18 +16,31 @@
 * `sporestackv2 start SomeHostname`
 * `sporestackv2 list`
 * `sporestackv2 remove SomeHostname # If expired`
+* `sporestackv2 settlement_token_generate`
+* `sporestackv2 settlement_token_enable (token) --dollars 10 --currency xmr`
+* `sporestackv2 settlement_token_add (token) --dollars 25 --currency btc`
+* `sporestackv2 settlement_token_balance (token)`
 
 More examples on the [website](https://sporestack.com).
 
-# Notes
+## Notes
 
- * You can use --walkingliberty_wallet if you don't want to pay by QR codes all the time.
+ * You can use --walkingliberty_wallet if you don't want to pay by QR codes all the time, or you can use --settlement_token. --settlement_token is probably better for most.
  * As of 1.0.7, will try to use a local Tor proxy if connecting to a .onion URL. (127.0.0.1:9050) (However, this does not apply to `serialconsole` for the time being.)
 
-# Deprecation notice
+## Tips
+
+If using Hidden Hosting, configure ~/.ssh/config like this (fixes serialconsole and you can ssh without torsocks):
+
+```
+Host *.onion
+        ProxyCommand nc -x localhost:9050 %h %p
+```
+
+## Deprecation notice
 
 Use `sporestackv2` instead of `sporestack`.
 
-# Licence
+## Licence
 
 [Unlicense/Public domain](LICENSE.txt)

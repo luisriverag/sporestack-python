@@ -38,7 +38,7 @@ def payment_to_uri(address, currency, amount):
         xmr_decimal_amount = "{0:.12f}".format(amount * 0.000000000001)
         uri = 'monero:{}?tx_amount={}'.format(address, xmr_decimal_amount)
     else:
-        raise ValueError('Currency must be one of: btc, bch, bsv')
+        raise ValueError('Currency must be one of: btc, bch, bsv, xmr')
 
     return uri
 

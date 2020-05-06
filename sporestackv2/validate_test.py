@@ -18,6 +18,16 @@ def test_machine_id():
         validate.machine_id(invalid_id)
 
 
+def test_settlement_token():
+    assert validate.settlement_token(valid_id) is True
+    with pytest.raises(TypeError):
+        validate.settlement_token(1337)
+    with pytest.raises(ValueError):
+        validate.settlement_token(valid_id + 'b')
+    with pytest.raises(ValueError):
+        validate.settlement_token(invalid_id)
+
+
 def test_days():
     with pytest.raises(ValueError):
         validate.days(0)
@@ -82,6 +92,19 @@ def test_bandwidth():
         validate.bandwidth(1.0)
 
 
+def test_cents():
+    assert validate.cents(1) is True
+    assert validate.cents(0) is True
+    assert validate.cents(10) is True
+    assert validate.cents(1000000) is True
+    with pytest.raises(TypeError):
+        validate.cents(-1)
+    with pytest.raises(TypeError):
+        validate.cents('a')
+    with pytest.raises(TypeError):
+        validate.cents(None)
+
+
 def test_further_ipv4_ipv6():
     assert validate.further_ipv4_ipv6('tor', 'tor') is True
     assert validate.further_ipv4_ipv6('nat', 'nat') is True
@@ -95,6 +118,15 @@ def test_further_ipv4_ipv6():
         validate.further_ipv4_ipv6('tor', '/128')
     with pytest.raises(ValueError):
         validate.further_ipv4_ipv6('/32', 'tor')
+
+
+def test_further_dollars_cents():
+    assert validate._further_dollars_cents(10, None) is True
+    assert validate._further_dollars_cents(None, 1000) is True
+    with pytest.raises(ValueError):
+        validate._further_dollars_cents(10, 10)
+    with pytest.raises(ValueError):
+        validate._further_dollars_cents(None, None)
 
 
 def test_organization():

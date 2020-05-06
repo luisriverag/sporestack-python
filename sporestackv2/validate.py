@@ -25,6 +25,14 @@ def machine_id(machine_id):
     return True
 
 
+def settlement_token(settlement_token):
+    """
+    Validates a settlement token.
+    Identical format to machine IDs.
+    """
+    return machine_id(settlement_token)
+
+
 def operating_system(operating_system):
     """
     Validates an operating_system argument.
@@ -268,6 +276,14 @@ def further_ipv4_ipv6(ipv4, ipv6):
     return True
 
 
+def _further_dollars_cents(dollars, cents):
+    if dollars is None and cents is None:
+        raise ValueError("dollars or cents must be set.")
+    if dollars is not None and cents is not None:
+        raise ValueError("dollars or cents must be set, not both.")
+    return True
+
+
 def ipxescript(ipxescript):
     if ipxescript is None:
         return True
@@ -305,3 +321,9 @@ def affiliate_amount(amount):
         if amount != 0:
             return True
     raise TypeError('affiliate_amount must be null or non-zero unsigned int.')
+
+
+def cents(cents):
+    if not unsigned_int(cents):
+        raise TypeError("cents must be unsigned integer.")
+    return True

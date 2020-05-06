@@ -5,12 +5,9 @@ import sys
 import os
 from time import sleep
 
-import aaargh
 import requests
 
 from . import validate
-
-cli = aaargh.App()
 
 LATEST_API_VERSION = 2
 
@@ -152,33 +149,6 @@ def get_url(api_endpoint, host, target):
     return '{}/v{}/{}'.format(api_endpoint, LATEST_API_VERSION, target)
 
 
-# FIXME: ordering
-@cli.cmd
-@cli.cmd_arg('machine_id')
-@cli.cmd_arg('--days', type=int)
-@cli.cmd_arg('--disk', type=int)
-@cli.cmd_arg('--memory', type=int)
-@cli.cmd_arg('--ipv4')
-@cli.cmd_arg('--ipv6')
-@cli.cmd_arg('--bandwidth', type=int)
-@cli.cmd_arg('--hostaccess', type=bool, default=False)
-@cli.cmd_arg('--override_code', type=str, default=None)
-@cli.cmd_arg('--organization', type=str, default=None)
-@cli.cmd_arg('--managed', type=bool, default=False)
-@cli.cmd_arg('--currency', type=str)
-@cli.cmd_arg('--cores', type=int, default=1)
-@cli.cmd_arg('--region', type=str, default=None)
-@cli.cmd_arg('--settlement_token', type=str, default=None)
-@cli.cmd_arg('--refund_address', type=str, default=None)
-@cli.cmd_arg('--qemuopts', type=str, default=None)
-@cli.cmd_arg('--api_endpoint', type=str, default=None)
-@cli.cmd_arg('--host', type=str, default=None)
-@cli.cmd_arg('--ipxescript', type=str, default=None)
-@cli.cmd_arg('--operating_system', type=str, default=None)
-@cli.cmd_arg('--ssh_key', type=str, default=None)
-@cli.cmd_arg('--want_topup', type=bool, default=False)
-@cli.cmd_arg('--affiliate_amount', type=int, default=None)
-@cli.cmd_arg('--affiliate_token', type=str, default=None)
 def launch(machine_id,
            days,
            disk,
@@ -192,7 +162,6 @@ def launch(machine_id,
            operating_system=None,
            ssh_key=None,
            organization=None,
-           refund_address=None,
            cores=1,
            managed=False,
            override_code=None,
@@ -230,7 +199,6 @@ def launch(machine_id,
                    'days': days,
                    'disk': disk,
                    'memory': memory,
-                   'refund_address': refund_address,
                    'cores': cores,
                    'managed': managed,
                    'currency': currency,
@@ -255,22 +223,10 @@ def launch(machine_id,
     return api_request(url=url, json_params=json_params, retry=retry)
 
 
-@cli.cmd
-@cli.cmd_arg('machine_id')
-@cli.cmd_arg('--settlement_token', type=str, default=None)
-@cli.cmd_arg('--override_code', type=str, default=None)
-@cli.cmd_arg('--currency', type=str, default=None)
-@cli.cmd_arg('--days', type=int)
-@cli.cmd_arg('--refund_address', type=str, default=None)
-@cli.cmd_arg('--api_endpoint', type=str, default=None)
-@cli.cmd_arg('--host', type=str, default=None)
-@cli.cmd_arg('--affiliate_amount', type=int, default=None)
-@cli.cmd_arg('--affiliate_token', type=str, default=None)
 def topup(machine_id,
           days,
           currency,
           settlement_token=None,
-          refund_address=None,
           override_code=None,
           api_endpoint=None,
           host=None,
@@ -283,7 +239,6 @@ def topup(machine_id,
 
     json_params = {'machine_id': machine_id,
                    'days': days,
-                   'refund_address': refund_address,
                    'settlement_token': settlement_token,
                    'currency': currency,
                    'host': host,
@@ -294,10 +249,6 @@ def topup(machine_id,
     return api_request(url=url, json_params=json_params, retry=retry)
 
 
-@cli.cmd
-@cli.cmd_arg('host')
-@cli.cmd_arg('machine_id')
-@cli.cmd_arg('--api_endpoint', type=str, default=None)
 def start(host, machine_id, api_endpoint=None):
     """
     Boots the VM.
@@ -310,10 +261,6 @@ def start(host, machine_id, api_endpoint=None):
     return True
 
 
-@cli.cmd
-@cli.cmd_arg('host')
-@cli.cmd_arg('machine_id')
-@cli.cmd_arg('--api_endpoint', type=str, default=None)
 def stop(host, machine_id, api_endpoint=None):
     """
     Immediately kills the VM.
@@ -326,10 +273,6 @@ def stop(host, machine_id, api_endpoint=None):
     return True
 
 
-@cli.cmd
-@cli.cmd_arg('host')
-@cli.cmd_arg('machine_id')
-@cli.cmd_arg('--api_endpoint', type=str, default=None)
 def delete(host, machine_id, api_endpoint=None):
     """
     Immediately deletes the VM.
@@ -342,10 +285,6 @@ def delete(host, machine_id, api_endpoint=None):
     return True
 
 
-@cli.cmd
-@cli.cmd_arg('host')
-@cli.cmd_arg('machine_id')
-@cli.cmd_arg('--api_endpoint', type=str, default=None)
 def sshhostname(host, machine_id, api_endpoint=None):
     """
     Returns a hostname that we can SSH into to reach
@@ -358,10 +297,6 @@ def sshhostname(host, machine_id, api_endpoint=None):
     return api_request(url, get_params=get_params)
 
 
-@cli.cmd
-@cli.cmd_arg('host')
-@cli.cmd_arg('machine_id')
-@cli.cmd_arg('--api_endpoint', type=str, default=None)
 def info(host, machine_id, api_endpoint=None):
     """
     Returns info about the VM.
@@ -373,10 +308,6 @@ def info(host, machine_id, api_endpoint=None):
     return api_request(url, get_params=get_params)
 
 
-@cli.cmd
-@cli.cmd_arg('host')
-@cli.cmd_arg('machine_id')
-@cli.cmd_arg('--api_endpoint', type=str, default=None)
 def ipxescript(host, machine_id, ipxescript=None, api_endpoint=None):
     """
     Trying to make this both useful as a CLI tool and
@@ -397,11 +328,6 @@ def ipxescript(host, machine_id, ipxescript=None, api_endpoint=None):
     return api_request(url, json_params=json_params)
 
 
-@cli.cmd
-@cli.cmd_arg('host')
-@cli.cmd_arg('machine_id')
-@cli.cmd_arg('bootorder')
-@cli.cmd_arg('--api_endpoint', type=str, default=None)
 def bootorder(host, machine_id, bootorder, api_endpoint=None):
     """
     Updates the boot order for a VM.
@@ -416,9 +342,6 @@ def bootorder(host, machine_id, bootorder, api_endpoint=None):
     return api_request(url, json_params=json_params)
 
 
-@cli.cmd
-@cli.cmd_arg('host')
-@cli.cmd_arg('--api_endpoint', type=str, default=None)
 def host_info(host, api_endpoint=None):
     """
     Returns info about the host.
@@ -427,9 +350,6 @@ def host_info(host, api_endpoint=None):
     return api_request(url)
 
 
-@cli.cmd
-@cli.cmd_arg('host')
-@cli.cmd_arg('machine_id')
 def serialconsole(host, machine_id):
     """
     This needs to be adjusted to use a Tor socks proxy of the host is a .onion.
@@ -444,15 +364,47 @@ def serialconsole(host, machine_id):
     arguments.append('-p')
     arguments.append('1060')
     arguments.append('serialconsole {}'.format(machine_id))
+    logging.info(command, arguments)
     os.execv(command, arguments)
 
 
-if __name__ == '__main__':
-    output = cli.run()
-    if output is True:
-        exit(0)
-    elif output is False:
-        exit(1)
-    else:
-        print(output)
-        exit(0)
+def settlement_token_enable(settlement_token,
+                            cents,
+                            currency,
+                            api_endpoint=None,
+                            retry=False):
+    validate.settlement_token(settlement_token)
+    validate.cents(cents)
+    validate.currency(currency)
+
+    json_params = {'settlement_token': settlement_token,
+                   'cents': cents,
+                   'currency': currency}
+    url = api_endpoint + '/settlement/enable'
+    return api_request(url=url, json_params=json_params, retry=retry)
+
+
+def settlement_token_add(settlement_token,
+                         cents,
+                         currency,
+                         api_endpoint=None,
+                         retry=False):
+    validate.settlement_token(settlement_token)
+    validate.cents(cents)
+    validate.currency(currency)
+
+    json_params = {'settlement_token': settlement_token,
+                   'cents': cents,
+                   'currency': currency}
+    url = api_endpoint + '/settlement/add'
+    return api_request(url=url, json_params=json_params, retry=retry)
+
+
+def settlement_token_balance(settlement_token,
+                             api_endpoint=None,
+                             retry=False):
+    validate.settlement_token(settlement_token)
+
+    get_params = {'settlement_token': settlement_token}
+    url = api_endpoint + '/settlement/balance'
+    return api_request(url=url, get_params=get_params, retry=retry)

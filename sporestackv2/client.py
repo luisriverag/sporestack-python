@@ -17,6 +17,7 @@ import pyqrcode
 from walkingliberty import WalkingLiberty
 
 from . import api_client
+from . import validate
 from .version import __version__
 
 cli = aaargh.App()
@@ -28,6 +29,8 @@ TOR_ENDPOINT = 'http://spore64'\
                'i5sofqlfz5gq2ju4msgzojjwifls7rok2cti624zyq3fcelad.onion'
 
 API_ENDPOINT = CLEARNET_ENDPOINT
+
+WAITING_PAYMENT_TO_PROCESS = 'Waiting for payment to process...'
 
 
 def i_am_root():
@@ -52,16 +55,13 @@ def random_machine_id():
 
 
 def make_payment(currency,
-                 address,
-                 satoshis,
                  uri,
                  usd=None,
                  walkingliberty_wallet=None):
     if walkingliberty_wallet is not None:
         walkingliberty = WalkingLiberty(currency)
-        txid = walkingliberty.send(private_key=walkingliberty_wallet,
-                                   address=address,
-                                   satoshis=satoshis)
+        txid = walkingliberty.pay(private_key=walkingliberty_wallet,
+                                  uri=uri)
         logging.debug('WalkingLiberty txid: {}'.format(txid))
     else:
         premessage = '''Payment URI: {}
@@ -98,7 +98,6 @@ Press ctrl+c to abort.'''
 @cli.cmd_arg('--ipv6', default='/128')
 @cli.cmd_arg('--disk', type=int, default=5)
 @cli.cmd_arg('--days', type=int, required=True)
-@cli.cmd_arg('--refund_address', type=str, default=None)
 @cli.cmd_arg('--qemuopts', type=str, default=None)
 @cli.cmd_arg('--walkingliberty_wallet', type=str, default=None)
 @cli.cmd_arg('--api_endpoint', type=str, default=API_ENDPOINT)
@@ -121,7 +120,6 @@ def launch(vm_hostname,
            bandwidth,
            host=None,
            api_endpoint=API_ENDPOINT,
-           refund_address=None,
            cores=1,
            currency='bch',
            region=None,
@@ -150,6 +148,10 @@ def launch(vm_hostname,
     bandwidth = api_client.normalize_argument(bandwidth)
     want_topup = api_client.normalize_argument(want_topup)
     ipxescript_stdin = api_client.normalize_argument(ipxescript_stdin)
+
+    if settlement_token is not None:
+        if currency is None:
+            currency = 'settlement'
 
     if machine_exists(vm_hostname):
         message = '{} already created.'.format(vm_hostname)
@@ -195,7 +197,6 @@ def launch(vm_hostname,
                       ipxescript=ipxescript,
                       operating_system=operating_system,
                       ssh_key=ssh_key,
-                      refund_address=refund_address,
                       cores=cores,
                       ipv4=ipv4,
                       ipv6=ipv6,
@@ -221,9 +222,6 @@ def launch(vm_hostname,
         host = created_dict['host']
     # This will be false at least the first time if paying with BTC or BCH.
     if created_dict['paid'] is False:
-        address = created_dict['payment']['address']
-        satoshis = created_dict['payment']['amount']
-
         uri = created_dict['payment']['uri']
 
         if 'usd' in created_dict['payment']:
@@ -232,8 +230,6 @@ def launch(vm_hostname,
             usd = None
 
         make_payment(currency=currency,
-                     address=address,
-                     satoshis=satoshis,
                      uri=uri,
                      usd=usd,
                      walkingliberty_wallet=walkingliberty_wallet)
@@ -241,7 +237,7 @@ def launch(vm_hostname,
         tries = 360
         while tries > 0:
             tries = tries - 1
-            logging.info('Waiting for payment to process...')
+            logging.info(WAITING_PAYMENT_TO_PROCESS)
             # FIXME: Wait one hour in a smarter way.
             # Waiting for payment to set in.
             time.sleep(10)
@@ -280,10 +276,9 @@ def launch(vm_hostname,
 @cli.cmd
 @cli.cmd_arg('vm_hostname')
 @cli.cmd_arg('--override_code', type=str, default=None)
-@cli.cmd_arg('--currency', type=str, default=None, required=True)
+@cli.cmd_arg('--currency', type=str, default=None)
 @cli.cmd_arg('--settlement_token', type=str, default=None)
 @cli.cmd_arg('--days', type=int, required=True)
-@cli.cmd_arg('--refund_address', type=str, default=None)
 @cli.cmd_arg('--walkingliberty_wallet', type=str, default=None)
 @cli.cmd_arg('--api_endpoint', type=str, default=None)
 @cli.cmd_arg('--affiliate_amount', type=int, default=None)
@@ -291,7 +286,6 @@ def launch(vm_hostname,
 def topup(vm_hostname,
           days,
           currency,
-          refund_address=None,
           override_code=None,
           settlement_token=None,
           walkingliberty_wallet=None,
@@ -301,6 +295,9 @@ def topup(vm_hostname,
     """
     tops up an existing vm.
     """
+    if settlement_token is not None:
+        if currency is None:
+            currency = 'settlement'
 
     if not machine_exists(vm_hostname):
         message = '{} does not exist.'.format(vm_hostname)
@@ -323,7 +320,6 @@ def topup(vm_hostname,
         return api_client.topup(host=host,
                                 machine_id=machine_id,
                                 days=days,
-                                refund_address=refund_address,
                                 currency=currency,
                                 override_code=override_code,
                                 api_endpoint=api_endpoint,
@@ -336,9 +332,6 @@ def topup(vm_hostname,
     # This will be false at least the first time if paying with anything
     # but settlement.
     if topped_dict['paid'] is False:
-        address = topped_dict['payment']['address']
-        satoshis = topped_dict['payment']['amount']
-
         uri = topped_dict['payment']['uri']
 
         if 'usd' in topped_dict['payment']:
@@ -347,15 +340,13 @@ def topup(vm_hostname,
             usd = None
 
         make_payment(currency=currency,
-                     address=address,
-                     satoshis=satoshis,
                      uri=uri,
                      usd=usd,
                      walkingliberty_wallet=walkingliberty_wallet)
 
         tries = 360
         while tries > 0:
-            logging.info('Waiting for payment to process...')
+            logging.info(WAITING_PAYMENT_TO_PROCESS)
             tries = tries - 1
             # FIXME: Wait one hour in a smarter way.
             # Waiting for payment to set in.
@@ -425,6 +416,8 @@ def pretty_machine_info(info):
     expiration = info["expiration"]
     human_expiration = time.strftime('%Y-%m-%d %H:%M:%S %z',
                                      time.localtime(expiration))
+    if 'running' in info:
+        msg += 'Running: {}\n'.format(info['running'])
     msg += 'Expiration: {} ({})\n'.format(expiration, human_expiration)
     time_to_live = expiration - int(time.time())
     if time_to_live > 0:
@@ -445,7 +438,13 @@ def list():
     infos = []
     for vm_hostname_json in os.listdir(directory):
         vm_hostname = vm_hostname_json.split('.')[0]
-        infos.append(get_machine_info(vm_hostname))
+        saved_vm_info = get_machine_info(vm_hostname)
+        upstream_vm_info = api_client.info(host=saved_vm_info['host'],
+                                           machine_id=saved_vm_info['machine_id'],
+                                           api_endpoint=saved_vm_info['api_endpoint'])
+        saved_vm_info['expiration'] = upstream_vm_info['expiration']
+        saved_vm_info['running'] = upstream_vm_info['running']
+        infos.append(saved_vm_info)
 
     for info in infos:
         print()
@@ -642,6 +641,135 @@ def serialconsole(vm_hostname):
         host = api_endpoint_to_host(machine_info['api_endpoint'])
     machine_id = machine_info['machine_id']
     return api_client.serialconsole(host, machine_id)
+
+
+@cli.cmd
+@cli.cmd_arg('settlement_token')
+@cli.cmd_arg('--dollars', type=int, default=None)
+@cli.cmd_arg('--cents', type=int, default=None)
+@cli.cmd_arg('--currency', type=str, default=None, required=True)
+@cli.cmd_arg('--walkingliberty_wallet', type=str, default=None)
+@cli.cmd_arg('--api_endpoint', type=str, default=API_ENDPOINT)
+def settlement_token_enable(settlement_token,
+                            dollars=None,
+                            cents=None,
+                            currency=None,
+                            walkingliberty_wallet=None,
+                            api_endpoint=None):
+    """
+    Enables a new settlement token.
+
+    Cents is starting balance.
+    """
+
+    cents = _get_cents(dollars, cents)
+
+    def enable_token():
+        return api_client.settlement_token_enable(settlement_token=settlement_token,
+                                                  cents=cents,
+                                                  currency=currency,
+                                                  api_endpoint=api_endpoint,
+                                                  retry=True)
+
+    enable_dict = enable_token()
+    uri = enable_dict['payment_uri']
+    usd = enable_dict['usd']
+
+    make_payment(currency=currency,
+                 uri=uri,
+                 usd=usd,
+                 walkingliberty_wallet=walkingliberty_wallet)
+
+    tries = 360
+    while tries > 0:
+        logging.info(WAITING_PAYMENT_TO_PROCESS)
+        tries = tries - 1
+        # FIXME: Wait one hour in a smarter way.
+        # Waiting for payment to set in.
+        time.sleep(10)
+        enable_dict = enable_token()
+        if enable_dict['paid'] is True:
+            break
+
+    return True
+
+
+def _get_cents(dollars, cents):
+    validate._further_dollars_cents(dollars, cents)
+    if dollars is not None:
+        validate.cents(dollars)
+        cents = dollars * 100
+    return cents
+
+
+@cli.cmd
+@cli.cmd_arg('settlement_token')
+@cli.cmd_arg('--dollars', type=int, default=None)
+@cli.cmd_arg('--cents', type=int, default=None)
+@cli.cmd_arg('--currency', type=str, default=None, required=True)
+@cli.cmd_arg('--walkingliberty_wallet', type=str, default=None)
+@cli.cmd_arg('--api_endpoint', type=str, default=API_ENDPOINT)
+def settlement_token_add(settlement_token,
+                         dollars=None,
+                         cents=None,
+                         currency=None,
+                         walkingliberty_wallet=None,
+                         api_endpoint=None):
+    """
+    Adds balance to an existing settlement token.
+    """
+
+    cents = _get_cents(dollars, cents)
+
+    def add_to_token():
+        return api_client.settlement_token_add(settlement_token,
+                                               cents,
+                                               currency=currency,
+                                               api_endpoint=api_endpoint,
+                                               retry=True)
+
+    add_dict = add_to_token()
+    uri = add_dict['payment_uri']
+    usd = add_dict['usd']
+
+    make_payment(currency=currency,
+                 uri=uri,
+                 usd=usd,
+                 walkingliberty_wallet=walkingliberty_wallet)
+
+    tries = 360
+    while tries > 0:
+        logging.info(WAITING_PAYMENT_TO_PROCESS)
+        tries = tries - 1
+        # FIXME: Wait one hour in a smarter way.
+        # Waiting for payment to set in.
+        time.sleep(10)
+        add_dict = add_to_token()
+        if add_dict['paid'] is True:
+            break
+
+    return True
+
+
+@cli.cmd
+@cli.cmd_arg('settlement_token')
+@cli.cmd_arg('--api_endpoint', type=str, default=API_ENDPOINT)
+def settlement_token_balance(settlement_token,
+                             api_endpoint=None):
+    """
+    Gets balance for a settlement token.
+    """
+
+    return api_client.settlement_token_balance(settlement_token=settlement_token,
+                                               api_endpoint=api_endpoint)
+
+
+@cli.cmd
+def settlement_token_generate():
+    """
+    Generates a settlement token that can be enabled.
+    """
+    return random_machine_id()
 
 
 @cli.cmd
