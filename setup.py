@@ -8,7 +8,7 @@ VERSION = None
 with open("sporestackv2/version.py") as f:
     for line in f:
         if line.startswith("__version__"):
-            VERSION = line.replace("\"", "").split("=")[1].strip()
+            VERSION = line.replace('"', "").split("=")[1].strip()
             break
 if VERSION is None:
     raise ValueError("__version__ not found in __init__.py")
@@ -27,7 +27,7 @@ KEYWORDS = [
 ]
 
 setup(
-    python_requires=">=3.3",
+    python_requires=">=3.6",
     name="sporestack",
     version=VERSION,
     author="SporeStack",

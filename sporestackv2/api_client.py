@@ -152,23 +152,19 @@ def get_url(api_endpoint, host, target):
 def launch(
     machine_id,
     days,
-    disk,
-    memory,
-    ipv4,
-    ipv6,
-    bandwidth,
     currency,
+    flavor=None,
+    disk=None,
+    memory=None,
+    ipv4=None,
+    ipv6=None,
     region=None,
     ipxescript=None,
     operating_system=None,
     ssh_key=None,
     organization=None,
     cores=1,
-    managed=False,
-    override_code=None,
     settlement_token=None,
-    qemuopts=None,
-    hostaccess=False,
     api_endpoint=None,
     host=None,
     want_topup=False,
@@ -178,15 +174,16 @@ def launch(
 ):
     """
     Only ipxescript or operating_system + ssh_key can be None.
+
+    flavor overrides cores, memory, etc settings.
     """
     ipv4 = normalize_argument(ipv4)
     ipv6 = normalize_argument(ipv6)
-    bandwidth = normalize_argument(bandwidth)
 
     validate.currency(currency)
+    validate.flavor(flavor)
     validate.ipv4(ipv4)
     validate.ipv6(ipv6)
-    validate.bandwidth(bandwidth)
     validate.cores(cores)
     validate.disk(disk)
     validate.memory(memory)
@@ -200,20 +197,16 @@ def launch(
     json_params = {
         "machine_id": machine_id,
         "days": days,
+        "flavor": flavor,
         "disk": disk,
         "memory": memory,
         "cores": cores,
-        "managed": managed,
         "currency": currency,
         "region": region,
         "organization": organization,
-        "bandwidth": bandwidth,
         "ipv4": ipv4,
         "ipv6": ipv6,
-        "override_code": override_code,
         "settlement_token": settlement_token,
-        "qemuopts": qemuopts,
-        "hostaccess": hostaccess,
         "ipxescript": ipxescript,
         "operating_system": operating_system,
         "ssh_key": ssh_key,
@@ -232,7 +225,6 @@ def topup(
     days,
     currency,
     settlement_token=None,
-    override_code=None,
     api_endpoint=None,
     host=None,
     retry=False,
@@ -249,7 +241,6 @@ def topup(
         "settlement_token": settlement_token,
         "currency": currency,
         "host": host,
-        "override_code": override_code,
         "affiliate_amount": affiliate_amount,
         "affiliate_token": affiliate_token,
     }

@@ -53,6 +53,26 @@ def operating_system(operating_system):
     return True
 
 
+def flavor(flavor):
+    """
+    Validates an flavor argument.
+    """
+    if flavor is None:
+        return True
+    if not isinstance(flavor, str):
+        raise TypeError("flavor must be null or a string.")
+    if len(flavor) < 1:
+        raise ValueError("flavor must have at least one letter.")
+    if len(flavor) > 16:
+        raise ValueError("flavor must have 16 letters or less.")
+    for character in flavor:
+        if character not in string.ascii_lowercase + string.digits + "-":
+            msg = "flavor must only contain a-z, digits, -"
+            raise ValueError(msg)
+
+    return True
+
+
 def ssh_key(ssh_key):
     """
     Validates an ssh_key argument.
@@ -75,8 +95,8 @@ def days(days, zero_allowed=False):
     """
     Makes sure our argument is valid.
     0-28
-    Keep in mind that 0 days implies no expiration and is
-    only allowed if override_code is set.
+    Keep in mind that 0 days implies no expiration,
+    may be used in the future with settlement tokens.
 
     0 is invalid unless zero_allowed is True.
     """
@@ -160,35 +180,6 @@ def cores(cores):
     return True
 
 
-def qemuopts(qemuopts):
-    """
-    Makes sure qemuopts is valid.
-    """
-    if qemuopts is None:
-        return True
-    if not isinstance(qemuopts, str):
-        raise TypeError("qemuopts must be none or str.")
-    return True
-
-
-def managed(managed):
-    """
-    Makes sure managed is valid.
-    """
-    if not isinstance(managed, bool):
-        raise TypeError("managed must be a boolean.")
-    return True
-
-
-def hostaccess(hostaccess):
-    """
-    Makes sure hostaccess is valid.
-    """
-    if not isinstance(hostaccess, bool):
-        raise TypeError("hostaccess must be a boolean.")
-    return True
-
-
 def currency(currency):
     """
     Makes sure currency is valid.
@@ -197,19 +188,6 @@ def currency(currency):
         return True
     if not isinstance(currency, str):
         raise TypeError("currency must be None or str.")
-    return True
-
-
-def refund_address(refund_address):
-    """
-    Makes sure refund_address is valid.
-
-    Currently not implemented.
-    """
-    if refund_address is None:
-        return True
-    if not isinstance(refund_address, str):
-        raise TypeError("refund_address must be none or str.")
     return True
 
 

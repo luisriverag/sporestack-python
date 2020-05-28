@@ -182,6 +182,34 @@ def test_operating_system():
         validate.operating_system("_")
 
 
+def test_flavor():
+    assert validate.flavor("debian-9") is True
+    assert validate.flavor("debian-10") is True
+    assert validate.flavor("ubuntu-16-04") is True
+    assert validate.flavor("something-else") is True
+    assert validate.flavor(None) is True
+
+    # Shortest valid.
+    assert validate.flavor("a") is True
+    # Longest valid
+    valid = validate.flavor(string.ascii_lowercase[:16])
+    assert valid is True
+
+    with pytest.raises(TypeError):
+        validate.flavor(1)
+    with pytest.raises(TypeError):
+        validate.flavor(0)
+    # Too short.
+    with pytest.raises(ValueError):
+        validate.flavor("")
+    # One too long.
+    with pytest.raises(ValueError):
+        validate.flavor(string.ascii_lowercase[:17])
+    # Bad character.
+    with pytest.raises(ValueError):
+        validate.flavor("_")
+
+
 valid_ssh_key = (
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDLuFASoTgo5r/bBGcawcN"
     "7B/NTyjmEi3cdgl8r3ldZXVXl6N/7vfF/O6ggkU1iJCHUgxOqGHzJMyJ3ZL"

@@ -7,11 +7,10 @@ Cleaner interface into api_client, for the most part.
 import json
 import sys
 
-# FUTURE PYTHON 3.6: import secrets
+import secrets
 import os
 import logging
 import time
-from hashlib import sha256
 
 import aaargh
 import pyqrcode
@@ -35,25 +34,13 @@ API_ENDPOINT = CLEARNET_ENDPOINT
 WAITING_PAYMENT_TO_PROCESS = "Waiting for payment to process..."
 
 
-def i_am_root():
-    if os.getuid() == 0:
-        return True
-    else:
-        return False
-
-
 def random_machine_id():
     """
     Makes a random Machine ID.
 
     These can also be deterministic, but then it wouldn't be called "random".
     """
-    # We could also use secrets.token_hex(32),
-    # this may be more secure.
-    # FUTURE PYTHON 3.6: random = secrets.token_bytes(64)
-    random = os.urandom(64)
-    machine_id = sha256(random).hexdigest()
-    return machine_id
+    return secrets.token_hex(32)
 
 
 def make_payment(currency, uri, usd=None, walkingliberty_wallet=None):
@@ -80,21 +67,17 @@ Press ctrl+c to abort."""
 @cli.cmd
 @cli.cmd_arg("vm_hostname")
 @cli.cmd_arg("--host", type=str, default=None)
-@cli.cmd_arg("--hostaccess", type=bool, default=False)
 @cli.cmd_arg("--save", type=bool, default=True)
-@cli.cmd_arg("--override_code", type=str, default=None)
 @cli.cmd_arg("--region", type=str, default=None)
-@cli.cmd_arg("--managed", type=bool, default=False)
 @cli.cmd_arg("--currency", type=str, default=None)
 @cli.cmd_arg("--settlement_token", type=str, default=None)
+@cli.cmd_arg("--flavor", type=str, default=None)
 @cli.cmd_arg("--cores", type=int, default=1)
 @cli.cmd_arg("--memory", type=int, default=1)
-@cli.cmd_arg("--bandwidth", type=int, default=1)
 @cli.cmd_arg("--ipv4", default="/32")
 @cli.cmd_arg("--ipv6", default="/128")
 @cli.cmd_arg("--disk", type=int, default=5)
 @cli.cmd_arg("--days", type=int, required=True)
-@cli.cmd_arg("--qemuopts", type=str, default=None)
 @cli.cmd_arg("--walkingliberty_wallet", type=str, default=None)
 @cli.cmd_arg("--api_endpoint", type=str, default=API_ENDPOINT)
 @cli.cmd_arg("--want_topup", type=bool, default=False)
@@ -110,22 +93,18 @@ Press ctrl+c to abort."""
 def launch(
     vm_hostname,
     days,
-    disk,
-    memory,
-    ipv4,
-    ipv6,
-    bandwidth,
+    flavor=None,
+    disk=None,
+    memory=None,
+    ipv4=None,
+    ipv6=None,
     host=None,
     api_endpoint=API_ENDPOINT,
     cores=1,
-    currency="bch",
+    currency=None,
     region=None,
-    managed=False,
     organization=None,
-    override_code=None,
     settlement_token=None,
-    qemuopts=None,
-    hostaccess=False,
     ipxescript=None,
     ipxescript_stdin=False,
     ipxescript_file=None,
@@ -140,10 +119,11 @@ def launch(
 ):
     """
     Attempts to launch a server.
+
+    Flavor overrides cores, memory, etc settings.
     """
     ipv4 = api_client.normalize_argument(ipv4)
     ipv6 = api_client.normalize_argument(ipv6)
-    bandwidth = api_client.normalize_argument(bandwidth)
     want_topup = api_client.normalize_argument(want_topup)
     ipxescript_stdin = api_client.normalize_argument(ipxescript_stdin)
 
@@ -177,12 +157,6 @@ def launch(
         with open(ipxescript_file) as fp:
             ipxescript = fp.read()
 
-    # FIXME: Hacky.
-    if host == "127.0.0.1":
-        if walkingliberty_wallet is None and settlement_token is None:
-            if override_code is None:
-                override_code = get_override_code()
-
     machine_id = random_machine_id()
 
     def create_vm(host):
@@ -191,6 +165,7 @@ def launch(
             host=host,
             machine_id=machine_id,
             days=days,
+            flavor=flavor,
             disk=disk,
             memory=memory,
             ipxescript=ipxescript,
@@ -199,15 +174,10 @@ def launch(
             cores=cores,
             ipv4=ipv4,
             ipv6=ipv6,
-            bandwidth=bandwidth,
             currency=currency,
             region=region,
             organization=organization,
-            managed=managed,
-            override_code=override_code,
             settlement_token=settlement_token,
-            qemuopts=qemuopts,
-            hostaccess=hostaccess,
             api_endpoint=api_endpoint,
             want_topup=want_topup,
             affiliate_amount=affiliate_amount,
@@ -277,7 +247,6 @@ def launch(
 
 @cli.cmd
 @cli.cmd_arg("vm_hostname")
-@cli.cmd_arg("--override_code", type=str, default=None)
 @cli.cmd_arg("--currency", type=str, default=None)
 @cli.cmd_arg("--settlement_token", type=str, default=None)
 @cli.cmd_arg("--days", type=int, required=True)
@@ -289,7 +258,6 @@ def topup(
     vm_hostname,
     days,
     currency,
-    override_code=None,
     settlement_token=None,
     walkingliberty_wallet=None,
     api_endpoint=None,
@@ -313,20 +281,12 @@ def topup(
     if api_endpoint is None:
         api_endpoint = machine_info["api_endpoint"]
 
-    if api_endpoint is None:
-        # FIXME: Hacky.
-        if host == "127.0.0.1":
-            if walkingliberty_wallet is None and settlement_token is None:
-                if override_code is None:
-                    override_code = get_override_code()
-
     def topup_vm():
         return api_client.topup(
             host=host,
             machine_id=machine_id,
             days=days,
             currency=currency,
-            override_code=override_code,
             api_endpoint=api_endpoint,
             settlement_token=settlement_token,
             affiliate_amount=affiliate_amount,
@@ -369,10 +329,7 @@ def topup(
 
 
 def machine_info_directory():
-    if i_am_root():
-        directory = "/etc/sporestackv2"
-    else:
-        directory = os.path.join(os.getenv("HOME"), ".sporestackv2")
+    directory = os.path.join(os.getenv("HOME"), ".sporestackv2")
     return directory
 
 
@@ -488,7 +445,7 @@ def remove_cli(vm_hostname):
 
 def machine_exists(vm_hostname):
     """
-    Check if the VM exists locally in /etc/sporestackv2 or ~/.sporestackv2
+    Check if the VM's JSON exists locally.
     """
     directory = machine_info_directory()
     file_path = os.path.join(directory, "{}.json".format(vm_hostname))
@@ -507,19 +464,6 @@ def get_attribute(vm_hostname, attribute):
     """
     machine_info = get_machine_info(vm_hostname)
     return machine_info[attribute]
-
-
-def get_override_code():
-    """
-    Attempts to procure the override code for
-    localhost spawns.
-    """
-    try:
-        with open("/etc/vmmanagement.override_code") as fp:
-            override_code = fp.read().strip("\n")
-    except Exception:
-        override_code = None
-    return override_code
 
 
 @cli.cmd
