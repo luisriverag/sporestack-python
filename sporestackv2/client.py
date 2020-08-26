@@ -121,10 +121,12 @@ def launch(
     Attempts to launch a server.
 
     Flavor overrides cores, memory, etc settings.
+
+    Flavor is highly preferred, core/memory/disk/ipv4/ipv6 are deprecated.
     """
     ipv4 = api_client.normalize_argument(ipv4)
     ipv6 = api_client.normalize_argument(ipv6)
-    want_topup = api_client.normalize_argument(want_topup)
+    # want_topup is ignored, always true basically now.
     ipxescript_stdin = api_client.normalize_argument(ipxescript_stdin)
 
     if settlement_token is not None:
@@ -179,7 +181,6 @@ def launch(
             organization=organization,
             settlement_token=settlement_token,
             api_endpoint=api_endpoint,
-            want_topup=want_topup,
             affiliate_amount=affiliate_amount,
             affiliate_token=affiliate_token,
             retry=True,
