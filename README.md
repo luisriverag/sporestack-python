@@ -10,8 +10,9 @@
 
 ## Usage
 
-* `sporestackv2 launch SomeHostname --days 7 --ssh_key_file ~/.ssh/id_rsa.pub --operating_system debian-9 --currency btc`
+* `sporestackv2 launch SomeHostname --flavor vps-1vcpu-1gb --days 7 --ssh_key_file ~/.ssh/id_rsa.pub --operating_system debian-9 --currency btc`
 * `sporestackv2 topup SomeHostname --days 3 --currency bsv`
+* `sporestackv2 launch SomeOtherHostname --flavor vps-1vcpu-2gb --days 7 --ssh_key_file ~/.ssh/id_rsa.pub --operating_system debian-10 --currency btc`
 * `sporestackv2 stop SomeHostname`
 * `sporestackv2 start SomeHostname`
 * `sporestackv2 list`

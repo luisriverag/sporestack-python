@@ -11,6 +11,7 @@ import secrets
 import os
 import logging
 import time
+from argparse import SUPPRESS
 
 import aaargh
 import pyqrcode
@@ -18,6 +19,7 @@ from walkingliberty import WalkingLiberty
 
 from . import api_client
 from . import validate
+from .flavors import all_sporestack_flavors
 from .version import __version__
 
 cli = aaargh.App()
@@ -30,6 +32,8 @@ TOR_ENDPOINT = (
 )
 
 API_ENDPOINT = CLEARNET_ENDPOINT
+
+DEFAULT_FLAVOR = "vps-1vcpu-1gb"
 
 WAITING_PAYMENT_TO_PROCESS = "Waiting for payment to process..."
 
@@ -71,16 +75,16 @@ Press ctrl+c to abort."""
 @cli.cmd_arg("--region", type=str, default=None)
 @cli.cmd_arg("--currency", type=str, default=None)
 @cli.cmd_arg("--settlement_token", type=str, default=None)
-@cli.cmd_arg("--flavor", type=str, default=None)
-@cli.cmd_arg("--cores", type=int, default=1)
-@cli.cmd_arg("--memory", type=int, default=1)
-@cli.cmd_arg("--ipv4", default="/32")
-@cli.cmd_arg("--ipv6", default="/128")
-@cli.cmd_arg("--disk", type=int, default=5)
+@cli.cmd_arg("--flavor", type=str, default=DEFAULT_FLAVOR)
+@cli.cmd_arg("--cores", type=int, help=SUPPRESS, default=None)
+@cli.cmd_arg("--memory", type=int, help=SUPPRESS, default=None)
+@cli.cmd_arg("--ipv4", help=SUPPRESS, default=None)
+@cli.cmd_arg("--ipv6", help=SUPPRESS, default=None)
+@cli.cmd_arg("--disk", type=int, default=None)
 @cli.cmd_arg("--days", type=int, required=True)
 @cli.cmd_arg("--walkingliberty_wallet", type=str, default=None)
 @cli.cmd_arg("--api_endpoint", type=str, default=API_ENDPOINT)
-@cli.cmd_arg("--want_topup", type=bool, default=False)
+@cli.cmd_arg("--want_topup", type=bool, default=False, help=SUPPRESS)
 @cli.cmd_arg("--organization", type=str, default=None)
 @cli.cmd_arg("--ipxescript", type=str, default=None)
 @cli.cmd_arg("--ipxescript_stdin", type=bool, default=False)
@@ -100,7 +104,7 @@ def launch(
     ipv6=None,
     host=None,
     api_endpoint=API_ENDPOINT,
-    cores=1,
+    cores=None,
     currency=None,
     region=None,
     organization=None,
@@ -124,9 +128,25 @@ def launch(
 
     Flavor is highly preferred, core/memory/disk/ipv4/ipv6 are deprecated.
     """
+
+    if memory is not None:
+        logging.warning("--memory is deprecated, please use --flavor instead.")
+    if cores is not None:
+        logging.warning("--cores is deprecated, please use --flavor instead.")
+    if disk is not None:
+        logging.warning("--disk is deprecated, please use --flavor instead.")
+
+    if want_topup is True:
+        # want_topup is ignored, always true basically now.
+        logging.warning("--want_topup is deprecated, please use --flavor instead.")
+
     ipv4 = api_client.normalize_argument(ipv4)
     ipv6 = api_client.normalize_argument(ipv6)
-    # want_topup is ignored, always true basically now.
+    if ipv4 is not None:
+        logging.warning("--ipv4 is deprecated, please use --flavor instead.")
+    if ipv6 is not None:
+        logging.warning("--ipv6 is deprecated, please use --flavor instead.")
+
     ipxescript_stdin = api_client.normalize_argument(ipxescript_stdin)
 
     if settlement_token is not None:
@@ -388,6 +408,15 @@ def pretty_machine_info(info):
     hours = time_to_live // 3600
     msg += "Server will be deleted in {} hours.".format(hours)
     return msg
+
+
+@cli.cmd
+def flavors():
+    """
+    List all available flavors.
+    """
+    for flavor in all_sporestack_flavors:
+        print(all_sporestack_flavors[flavor])
 
 
 @cli.cmd
