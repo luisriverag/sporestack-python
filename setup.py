@@ -13,13 +13,15 @@ with open("sporestackv2/version.py") as f:
 if VERSION is None:
     raise ValueError("__version__ not found in __init__.py")
 
-DOWNLOAD_URL = "https://github.com/sporestack/sporestack-python/tarball/{}"
+DOWNLOAD_HOST = "https://git.sporestack.com"
+DOWNLOAD_URL = f"{DOWNLOAD_HOST}/SporeStack/sporestack-python/archive/{VERSION}.tar.gz"
 
 DESCRIPTION = "SporeStack.com library and client. Launch servers with Bitcoin."
 KEYWORDS = [
     "bitcoin",
     "bitcoincash",
     "bitcoinsv",
+    "monero",
     "servers",
     "infrastructure",
     "vps",
@@ -36,7 +38,7 @@ setup(
     keywords=KEYWORDS,
     license="Unlicense",
     url="https://sporestack.com/",
-    download_url=DOWNLOAD_URL.format(VERSION),
+    download_url=DOWNLOAD_URL,
     packages=["sporestackv2"],
     install_requires=[
         "pyqrcode",
