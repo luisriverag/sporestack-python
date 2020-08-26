@@ -167,7 +167,6 @@ def launch(
     settlement_token=None,
     api_endpoint=None,
     host=None,
-    want_topup=False,
     retry=False,
     affiliate_amount=None,
     affiliate_token=None,
@@ -177,16 +176,9 @@ def launch(
 
     flavor overrides cores, memory, etc settings.
     """
-    ipv4 = normalize_argument(ipv4)
-    ipv6 = normalize_argument(ipv6)
 
     validate.currency(currency)
     validate.flavor(flavor)
-    validate.ipv4(ipv4)
-    validate.ipv6(ipv6)
-    validate.cores(cores)
-    validate.disk(disk)
-    validate.memory(memory)
     validate.organization(organization)
     validate.machine_id(machine_id)
     validate.ipxescript(ipxescript)
@@ -198,23 +190,32 @@ def launch(
         "machine_id": machine_id,
         "days": days,
         "flavor": flavor,
-        "disk": disk,
-        "memory": memory,
-        "cores": cores,
         "currency": currency,
         "region": region,
         "organization": organization,
-        "ipv4": ipv4,
-        "ipv6": ipv6,
         "settlement_token": settlement_token,
         "ipxescript": ipxescript,
         "operating_system": operating_system,
         "ssh_key": ssh_key,
-        "want_topup": want_topup,
         "host": host,
         "affiliate_amount": affiliate_amount,
         "affiliate_token": affiliate_token,
     }
+
+    # If flavor is None, check these
+    if flavor is None:
+        ipv4 = normalize_argument(ipv4)
+        ipv6 = normalize_argument(ipv6)
+        validate.ipv4(ipv4)
+        validate.ipv6(ipv6)
+        validate.cores(cores)
+        validate.disk(disk)
+        validate.memory(memory)
+        json_params["ipv4"] = ipv4
+        json_params["ipv6"] = ipv6
+        json_params["cores"] = cores
+        json_params["disk"] = disk
+        json_params["memory"] = memory
 
     url = get_url(api_endpoint=api_endpoint, host=host, target="launch")
     return api_request(url=url, json_params=json_params, retry=retry)
